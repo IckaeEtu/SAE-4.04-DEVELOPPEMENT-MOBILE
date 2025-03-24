@@ -95,6 +95,40 @@ class DatabaseHelper {
       );
     ''');
   }
+
+/// Récupère tout les avis d'un restaurant
+/// 
+/// @param restaurantId L'identifiant du restaurant
+/// @return Une liste d'avis
+  Future<List<Map<String, dynamic>>> getAvisRestaurant(int restaurantId) async {
+  final db = await database;
+  return await db.query(
+    'Critique',
+    where: 'id_restaurant = ?',
+    whereArgs: [restaurantId],
+  );
+}
+
+/// Supprime un avis
+/// @param avisId L'indentifiant de l'avis
+Future<void> deleteAvis(int avisId) async {
+  final db = await database;
+  await db.delete('Critique', where: 'id = ?', whereArgs: [avisId]);
+}
+
+/// Ajoute un avis
+/// @param restaurantId L'identifiant d'un restaurant
+/// @param userId L'identifiant de l'utilisateur
+/// @param note La note de l'avis
+/// @param commentaire Le commentaire de l'avis
+Future<void> addAvis(int restaurantId, int userId, int note, String commentaire) async {
+  final db = await database;
+  await db.insert("Critique", {
+    "id_restaurant": restaurantId,
+    "id_utilisateur": userId,
+    "note": note,
+    "commentaire": commentaire
+  });
 }
 
 Future<bool> extraireRestaurants(List<Map<String, dynamic>> restaurants) async {
@@ -120,7 +154,7 @@ Future<bool> extraireRestaurants(List<Map<String, dynamic>> restaurants) async {
           };
 
           await db.insert('Restaurant', data,
-              conflictAlgorithm: ConflictAlgorithm.replace); // Utilisation de insert
+              conflictAlgorithm: ConflictAlgorithm.replace);
         }
       }
       return true;
@@ -129,3 +163,5 @@ Future<bool> extraireRestaurants(List<Map<String, dynamic>> restaurants) async {
       return false;
     }
   }
+}
+
