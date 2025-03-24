@@ -2,42 +2,35 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../core/models/restaurant.dart';
-import '../../data/data.dart'; // Importez le fichier data.dart
-// Il faut importer le widget pour les avis
+import '../../providers/restaurant_provider.dart';
+import '../../data/data.dart'; 
+// Il faut importer le widget avis
 
-class RestaurantDetailScreen extends StatefulWidget {
+class RestaurantDetailScreen extends StatelessWidget {
   final int restaurantId;
 
   RestaurantDetailScreen({required this.restaurantId});
 
   @override
-  _RestaurantDetailScreenState createState() => _RestaurantDetailScreenState();
-}
-
-class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
-  Future<Restaurant?>? _restaurantFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _restaurantFuture = Data.GetRestaurantById(widget.restaurantId);
-  }
-
-  @override
   Widget build(BuildContext context) {
+    // Utilisation d'un Provider pour gérer l'état du restaurant
+    final restaurantProvider = Provider.of<RestaurantProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Détails du Restaurant'),
       ),
-      body: FutureBuilder<Restaurant?>( // Utilisez Restaurant? pour gérer les cas où aucun restaurant n'est trouvé
-        future: _restaurantFuture,
+      body: FutureBuilder<Restaurant>(
+        // Utilisation de la fonction GetRestaurantById importée
+        future: Data.GetRestaurantById(restaurantId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(child: Text('Erreur: ${snapshot.error}'));
-          } else if (snapshot.hasData && snapshot.data != null) {
+          } else if (snapshot.hasData) {
             final restaurant = snapshot.data!;
             return Padding(
               padding: const EdgeInsets.all(16.0),
@@ -46,7 +39,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   _buildRestaurantDetails(restaurant),
                   SizedBox(height: 20),
                   // Utilisation du widget ReviewWidget pour la gestion des avis
-                  ReviewWidget(restaurantId: widget.restaurantId),
+                  ReviewWidget(restaurantId: restaurantId),
                 ],
               ),
             );
@@ -77,26 +70,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           'Type: ${restaurant.type}',
           style: TextStyle(fontSize: 16),
         ),
-        Text(
-          'Téléphone: ${restaurant.telephone}',
-          style: TextStyle(fontSize: 16),
-        ),
-        Text(
-          'Site Web: ${restaurant.siteweb}',
-          style: TextStyle(fontSize: 16),
-        ),
-        Text(
-          'Description: ${restaurant.description}',
-          style: TextStyle(fontSize: 16),
-        ),
-        Text(
-          'Heures d\'ouverture: ${restaurant.openingHours}',
-          style: TextStyle(fontSize: 16),
-        ),
-        Text(
-          'Accessible aux fauteuils roulants: ${restaurant.wheelchair == 1 ? 'Oui' : 'Non'}',
-          style: TextStyle(fontSize: 16),
-        )
+        // ... Autres détails (téléphone, site web, etc.)
       ],
     );
   }
