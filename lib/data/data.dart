@@ -143,3 +143,17 @@ Future<Map<String, dynamic>?> getRestaurant(String nom) async {
     }
     return null;
   }
+
+Future<Map<String, dynamic>?> getRestaurantById(int id) async {
+    final db = await database;
+    List<Map<String, dynamic>> results = await db.query(
+      'Restaurant',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+
+    if (results.isNotEmpty) {
+      return results.first;
+    }
+    return null;
+  }
