@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../features/restaurants/screens/RestaurantDetailScreen.dart';
-import 'HomePage.dart';
 
 // Pour l'utiliser il faut mettre dans le bouton "contect.go('lien de la page: /restaurant/123)"
 final GoRouter routeur = GoRouter(
@@ -10,7 +9,7 @@ final GoRouter routeur = GoRouter(
         GoRoute(
             path: '/',
             builder: (context, state) {
-                return HomePage();
+                //return HomePage();
             },
         ),
         GoRoute(

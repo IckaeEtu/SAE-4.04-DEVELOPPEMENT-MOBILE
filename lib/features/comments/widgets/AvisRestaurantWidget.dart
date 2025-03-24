@@ -38,7 +38,7 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
 
   Future<void> _addAvis() async {
     if (widget.userId != null) {
-      await dbHelper.addAvis(widget.restaurantId, widget.userId!, newNote, newCommentaire);
+      await dbHelper.addAvis(widget.restaurantId, widget.userId!, newCommentaire, newNote);
       _loadAvis();
       setState(() {
         newCommentaire = '';
