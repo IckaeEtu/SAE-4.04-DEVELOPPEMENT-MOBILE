@@ -12,9 +12,9 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   List<String> categories = ['Restaurant étoilé', 'Fast-food', 'Gastronomie'];
   List<String> images = [
-  '/assets/images/img1.png',
-  '/assets/images/img2.png',
-  '/assets/images/img3.png',
+  '/images/img1.png',
+  '/images/img2.png',
+  '/images/img3.png',
 
 ];
   String searchResult = "";

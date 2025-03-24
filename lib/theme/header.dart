@@ -15,7 +15,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       title: Row(
         children: [
-          Image.asset('assets/images/logo.png', height: 40),
+          Image.asset('images/logo.png', height: 40),
           const SizedBox(width: 10),
           const Text("TriPOTEvisor"),
         ],
