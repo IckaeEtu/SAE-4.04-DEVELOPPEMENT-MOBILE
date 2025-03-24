@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:sae_mobile/core/models/Restaurant.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
@@ -109,21 +109,25 @@ class DatabaseHelper {
   // Fonctions d'accès aux données (à adapter)
   Future<List<Map<String, dynamic>>> getAvisUser(int userId) async {
     final db = await database;
-    return await db.query('Critique', where: 'id_utilisateur = ?', whereArgs: [userId]);
+    return await db
+        .query('Critique', where: 'id_utilisateur = ?', whereArgs: [userId]);
   }
 
   Future<Map<String, dynamic>?> getAvisById(int avisId) async {
     final db = await database;
-    final List<Map<String, dynamic>> result = await db.query('Critique', where: 'id = ?', whereArgs: [avisId]);
+    final List<Map<String, dynamic>> result =
+        await db.query('Critique', where: 'id = ?', whereArgs: [avisId]);
     return result.isNotEmpty ? result.first : null;
   }
 
   Future<List<Map<String, dynamic>>> getAvisRestaurant(int restaurantId) async {
     final db = await database;
-    return await db.query('Critique', where: 'id_restaurant = ?', whereArgs: [restaurantId]);
+    return await db.query('Critique',
+        where: 'id_restaurant = ?', whereArgs: [restaurantId]);
   }
 
-  Future<int> addAvis(int userId, int restaurantId, String avis, int note) async {
+  Future<int> addAvis(
+      int userId, int restaurantId, String avis, int note) async {
     final db = await database;
     return await db.insert('Critique', {
       'id_utilisateur': userId,
@@ -145,8 +149,23 @@ class DatabaseHelper {
 
   Future<Map<String, dynamic>?> getRestaurant(String nom) async {
     final db = await database;
-    final List<Map<String, dynamic>> result = await db.query('Restaurant', where: 'nom = ?', whereArgs: [nom]);
+    final List<Map<String, dynamic>> result =
+        await db.query('Restaurant', where: 'nom = ?', whereArgs: [nom]);
     return result.isNotEmpty ? result.first : null;
+  }
+
+  Future<Restaurant?> getRestaurantById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> result = await db.query(
+      'Restaurant',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (result.isNotEmpty) {
+      return Restaurant.fromMap(result.first);
+    } else {
+      return null;
+    }
   }
 
   Future<bool> extraireRestaurants(String json) async {
@@ -181,7 +200,7 @@ class DatabaseHelper {
     }
   }
 
-Future<void> testDatabase() async {
+  Future<void> testDatabase() async {
     print('Début des tests de la base de données...');
 
     // 1. Test de l'extraction et de l'insertion des restaurants
