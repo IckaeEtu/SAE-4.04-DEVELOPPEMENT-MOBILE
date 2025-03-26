@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:sae_mobile/data/data.dart';
 import 'package:sae_mobile/features/HomePage.dart';
 
-import 'dart:convert';
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
 
-import 'package:sae_mobile/theme/header.dart';
-import 'package:sae_mobile/theme/footer.dart';
-import 'package:sae_mobile/data/data.dart';
+  final dbHelper = DatabaseHelper();
+  await dbHelper.extraireRestaurants();
 
-void main() {
   runApp(MyApp());
 }
 
@@ -21,4 +20,3 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-

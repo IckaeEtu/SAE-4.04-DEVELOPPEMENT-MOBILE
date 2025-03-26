@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:sae_mobile/data/data.dart';
 import 'package:sae_mobile/theme/footer.dart';
 import 'package:sae_mobile/theme/header.dart';
 import 'package:http/http.dart' as http;
@@ -21,17 +22,29 @@ class _HomePageState extends State<HomePage> {
   
 
   void fetchSearchResults(String query) async {
-    final response = await http.get(Uri.parse('https://yourbackend.com/recuperationRestaurant.php?query=$query'));
-    if (response.statusCode == 200) {
-      setState(() {
-        searchResult = response.body;
-      });
-    } else {
-      setState(() {
-        searchResult = 'Erreur lors de la récupération des données';
-      });
-    }
+  // Récupère la base de données
+  final db = await DatabaseHelper().database;
+  
+  // Recherche dans la base de données les restaurants qui correspondent à la recherche
+  final List<Map<String, dynamic>> results = await db.query(
+    'Restaurant',
+    where: 'nom LIKE ? OR type LIKE ?',
+    whereArgs: ['%$query%', '%$query%'],
+  );
+  
+  if (results.isNotEmpty) {
+    setState(() {
+      searchResult = results.map((restaurant) {
+        return '${restaurant['nom']} - ${restaurant['type']}';
+      }).join('\n');
+    });
+  } else {
+    setState(() {
+      searchResult = 'Aucun restaurant trouvé pour votre recherche.';
+    });
   }
+}
+
 
   @override
   Widget build(BuildContext context) {

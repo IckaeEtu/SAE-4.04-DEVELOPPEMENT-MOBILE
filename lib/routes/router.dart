@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:go_routeur/go_routeur.dart';
+import 'package:sae_mobile/features/HomePage.dart';
+import 'package:sae_mobile/features/restaurants/screens/RestaurantDetailScreen.dart';
 
 import 'RestaurantDetailScreen.dart';
 import 'HomePage.dart';
