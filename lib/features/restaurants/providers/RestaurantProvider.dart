@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../core/models/restaurant.dart';
-import '../data/data.dart'; // Importez votre classe d'accès aux données
+import 'package:sae_mobile/core/models/Restaurant.dart';
 
 class RestaurantProvider extends ChangeNotifier {
   Restaurant? _selectedRestaurant;

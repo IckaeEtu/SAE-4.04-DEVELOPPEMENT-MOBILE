@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:sae_mobile/core/models/Restaurant.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 
@@ -15,15 +14,34 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfiWeb;
+    print("Début de l'initialisation de la base de données..."); // Log de début
 
-    final path = _databaseName;
-    return await openDatabase(path, version: 1, onCreate: _createDb);
+    try {
+      sqfliteFfiInit();
+      databaseFactory = databaseFactoryFfiWeb;
+
+      final path = _databaseName;
+      final db = await openDatabase(path, version: 1,
+          onCreate: (Database db, int version) async {
+        await _createDb(db, version);
+        await extraireRestaurants(
+            sampleJson); // Extraire le JSON après la création de la base de données
+      });
+
+      print("Base de données initialisée avec succès."); // Log de succès
+      return db;
+    } catch (e) {
+      print(
+          "Erreur lors de l'initialisation de la base de données : $e"); // Log d'erreur
+      return Future.error(e); // Propager l'erreur
+    }
   }
 
   Future<void> _createDb(Database db, int version) async {
-    await db.execute('''
+    print(
+        "Début de la création des tables de la base de données..."); // Log de début
+    try {
+      await db.execute('''
       CREATE TABLE Restaurant (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom TEXT NOT NULL,
@@ -42,7 +60,7 @@ class DatabaseHelper {
       )
     ''');
 
-    await db.execute('''
+      await db.execute('''
       CREATE TABLE Utilisateur (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT NOT NULL UNIQUE,
@@ -54,7 +72,7 @@ class DatabaseHelper {
       )
     ''');
 
-    await db.execute('''
+      await db.execute('''
       CREATE TABLE Critique (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         id_restaurant INTEGER NOT NULL,
@@ -68,14 +86,14 @@ class DatabaseHelper {
       )
     ''');
 
-    await db.execute('''
+      await db.execute('''
       CREATE TABLE TypeCuisine (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nom TEXT NOT NULL
       )
     ''');
 
-    await db.execute('''
+      await db.execute('''
       CREATE TABLE RestaurantTypeCuisine (
         id_restaurant INTEGER NOT NULL,
         id_type_cuisine INTEGER NOT NULL,
@@ -85,7 +103,7 @@ class DatabaseHelper {
       )
     ''');
 
-    await db.execute('''
+      await db.execute('''
       CREATE TABLE UtilisateurTypeCuisine (
         id_utilisateur INTEGER NOT NULL,
         id_type_cuisine INTEGER NOT NULL,
@@ -95,7 +113,7 @@ class DatabaseHelper {
       )
     ''');
 
-    await db.execute('''
+      await db.execute('''
       CREATE TABLE RestaurantPrefere (
         id_utilisateur INTEGER NOT NULL,
         id_restaurant INTEGER NOT NULL,
@@ -104,6 +122,12 @@ class DatabaseHelper {
         FOREIGN KEY (id_restaurant) REFERENCES Restaurant(id) ON DELETE CASCADE
       )
     ''');
+      print(
+          "Tables de la base de données créées avec succès."); // Log de succès
+    } catch (e) {
+      print(
+          "Erreur lors de la création des tables de la base de données : $e"); // Log d'erreur
+    }
   }
 
   // Fonctions d'accès aux données (à adapter)
@@ -169,15 +193,17 @@ class DatabaseHelper {
   }
 
   Future<bool> extraireRestaurants(String json) async {
-    final db = await database;
+    print("Début de l'extraction des restaurants depuis le JSON...");
+
     try {
+      final db = await database;
       final restaurants = jsonDecode(json) as List<dynamic>;
 
       for (var restaurant in restaurants) {
         final existingRestaurant = await getRestaurant(restaurant['name']);
 
         if (existingRestaurant == null) {
-          await db.insert('Restaurant', {
+          final insertedId = await db.insert('Restaurant', {
             'nom': restaurant['name'],
             'type': restaurant['type'],
             'adresse': '${restaurant['com_nom']}, ${restaurant['commune']}',
@@ -191,11 +217,14 @@ class DatabaseHelper {
             'code_departement': restaurant['code_departement'],
             'code_commune': restaurant['code_commune'],
           });
+          print("Restaurant inséré avec l'ID: $insertedId"); // Log
         }
       }
+
+      print("Restaurants extraits et insérés avec succès.");
       return true;
     } catch (e) {
-      print('Erreur lors de l\'extraction des restaurants : $e');
+      print("Erreur lors de l'extraction des restaurants : $e");
       return false;
     }
   }

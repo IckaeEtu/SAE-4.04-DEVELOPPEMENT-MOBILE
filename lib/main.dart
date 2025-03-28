@@ -29,17 +29,18 @@ import 'package:sae_mobile/features/restaurants/screens/RestaurantDetailScreen.d
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  final dbHelper = DatabaseHelper();
-  // await dbHelper.testDatabase(); // Vous pouvez le supprimer si vous n'en avez plus besoin
-
   runApp(MyApp());
+  // await dbHelper.testDatabase();
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: RestaurantDetailScreen(restaurantId: 1), // Appel du widget RestaurantDetailScreen
+      home: RestaurantDetailScreen(
+          restaurantId: 1), // Appel du widget RestaurantDetailScreen
     );
   }
 }

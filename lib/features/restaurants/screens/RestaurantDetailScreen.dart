@@ -1,5 +1,3 @@
-// lib/features/restaurants/screens/restaurant_detail_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sae_mobile/core/models/Restaurant.dart';
@@ -8,7 +6,7 @@ import 'package:sae_mobile/data/data.dart';
 class RestaurantDetailScreen extends StatefulWidget {
   final int restaurantId;
 
-  RestaurantDetailScreen({required this.restaurantId});
+  const RestaurantDetailScreen({super.key, required this.restaurantId});
 
   @override
   _RestaurantDetailScreenState createState() => _RestaurantDetailScreenState();
@@ -20,8 +18,23 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   @override
   void initState() {
     super.initState();
-    var Data = DatabaseHelper();
-    _restaurantFuture = Data.getRestaurantById(widget.restaurantId);
+    print(
+        "RestaurantDetailScreen initState called for restaurantId: ${widget.restaurantId}"); // Log
+
+    _initializeData();
+  }
+
+  Future<void> _initializeData() async {
+    try {
+      var Data = DatabaseHelper();
+      // s'assure que la base de donnée est bien initialisé avant de faire la requête pour les données.
+      await Data.database;
+      _restaurantFuture = Data.getRestaurantById(widget.restaurantId);
+      print(
+          "Fetching restaurant details for restaurantId: ${widget.restaurantId}"); // Log
+    } catch (e) {
+      print("Error fetching restaurant details: $e"); // Log
+    }
   }
 
   @override
@@ -33,25 +46,32 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       body: FutureBuilder<Restaurant?>(
         future: _restaurantFuture,
         builder: (context, snapshot) {
+          print("FutureBuilder state: ${snapshot.connectionState}"); // Log
+
           if (snapshot.connectionState == ConnectionState.waiting) {
+            print("Loading restaurant details..."); // Log
             return Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
+            print("Error loading restaurant details: ${snapshot.error}"); // Log
             return Center(child: Text('Erreur: ${snapshot.error}'));
           } else if (snapshot.hasData && snapshot.data != null) {
             final restaurant = snapshot.data!;
+            print(
+                "Restaurant details loaded successfully: ${restaurant.nom}"); // Log
             return Padding(
               padding: const EdgeInsets.all(16.0),
               child: ListView(
                 children: [
                   _buildRestaurantDetails(restaurant),
                   SizedBox(height: 20),
-                  
+
                   // Utilisation du widget ReviewWidget pour la gestion des avis
                   //ReviewWidget(restaurantId: widget.restaurantId),
                 ],
               ),
             );
           } else {
+            print("Restaurant not found."); // Log
             return Center(child: Text('Restaurant non trouvé'));
           }
         },
@@ -61,6 +81,8 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   // Widget pour afficher les détails du restaurant
   Widget _buildRestaurantDetails(Restaurant restaurant) {
+    print("Building restaurant details widget for: ${restaurant.nom}"); // Log
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
