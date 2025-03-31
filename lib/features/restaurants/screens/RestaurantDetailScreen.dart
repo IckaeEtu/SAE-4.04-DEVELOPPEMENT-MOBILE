@@ -4,9 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/restaurant.dart';
-import '../../providers/restaurant_provider.dart';
-import '../../data/data.dart'; 
-// Il faut importer le widget avis
+import '../../core/models/avis.dart';
+import '../../providers/restaurant_provider.dart'; // Exemple de Provider
 
 class RestaurantDetailScreen extends StatelessWidget {
   final int restaurantId;
