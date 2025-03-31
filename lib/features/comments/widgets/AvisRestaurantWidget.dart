@@ -196,11 +196,11 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
             DateTime.parse(avis['date_creation']).toString(),
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          if (avis['img'] != null)
+          if (avis['img'] != null) // Modification ici
             Image.network(
               avis['img'],
-              width: 200, // Ajustez la largeur selon vos besoins
-              height: 200, // Ajustez la hauteur selon vos besoins
+              width: 200,
+              height: 200,
               fit: BoxFit.cover,
             ),
           Text(avis['commentaire'] ?? ''),
