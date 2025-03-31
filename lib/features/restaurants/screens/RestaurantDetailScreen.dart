@@ -3,9 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../core/models/restaurant.dart';
-import '../../core/models/avis.dart';
-import '../../providers/restaurant_provider.dart'; // Exemple de Provider
 
 class RestaurantDetailScreen extends StatelessWidget {
   final int restaurantId;
