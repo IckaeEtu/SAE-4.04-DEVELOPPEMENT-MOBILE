@@ -24,13 +24,10 @@
 // }
 
 import 'package:flutter/material.dart';
-<<<<<<<<< Temporary merge branch 1
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'routes/router.dart';
-=========
 import 'package:sae_mobile/data/data.dart';
->>>>>>>>> Temporary merge branch 2
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
