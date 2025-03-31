@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sae_mobile/core/models/Restaurant.dart';
-import 'package:sae_mobile/data/data.dart';
+import 'package:provider/provider.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
   final int restaurantId;

@@ -203,19 +203,19 @@ class DatabaseHelper {
         final existingRestaurant = await getRestaurant(restaurant['name']);
 
         if (existingRestaurant == null) {
-          final insertedId = await db.insert('Restaurant', {
-            'nom': restaurant['name'],
-            'type': restaurant['type'],
-            'adresse': '${restaurant['com_nom']}, ${restaurant['commune']}',
-            'telephone': restaurant['phone'],
-            'siteweb': restaurant['website'],
+          await db.insert('Restaurant', {
+            'nom': restaurant['name'] ?? 'Nom inconnu',
+            'type': restaurant['type'] ?? 'Type inconnu',
+            'adresse': '${restaurant['com_nom'] ?? 'Commune inconnue'}, ${restaurant['commune'] ?? 'Commune inconnue'}',
+            'telephone': restaurant['phone'] ?? 'Téléphone inconnu',
+            'siteweb': restaurant['website'] ?? 'Site web non disponible',
             'description': restaurant['description'] ?? 'Aucune description',
-            'photo': restaurant['photo'],
-            'opening_hours': restaurant['opening_hours'],
+            'photo': restaurant['photo'] ?? 'Photo non disponible',
+            'opening_hours': restaurant['opening_hours'] ?? 'Horaires non disponibles',
             'wheelchair': restaurant['wheelchair'] == 'yes' ? 1 : 0,
-            'code_region': restaurant['code_region'],
-            'code_departement': restaurant['code_departement'],
-            'code_commune': restaurant['code_commune'],
+            'code_region': restaurant['code_region'] ?? 'Code région inconnu',
+            'code_departement': restaurant['code_departement'] ?? 'Code département inconnu',
+            'code_commune': restaurant['code_commune'] ?? 'Code commune inconnu',
           });
           print("Restaurant inséré avec l'ID: $insertedId"); // Log
         }
