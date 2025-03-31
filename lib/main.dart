@@ -38,9 +38,6 @@ Future<void> main() async {
   );
 
   final supabaseHelper = SupabaseHelper();
-  await supabaseHelper
-      .initialiserEtRemplirTables("data/restaurants_orleans.json");
-
   runApp(MyApp());
 }
 
@@ -59,7 +56,7 @@ class MyApp extends StatelessWidget {
           child: AvisRestaurantWidget(
             restaurantId: 1,
             userId:
-                1, // Remplacez par un ID d'utilisateur valide ou null pour tester sans utilisateur
+                2, // Remplacez par un ID d'utilisateur valide ou null pour tester sans utilisateur
           ),
         ),
       ),

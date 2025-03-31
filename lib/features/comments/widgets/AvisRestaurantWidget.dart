@@ -9,8 +9,11 @@ class AvisRestaurantWidget extends StatefulWidget {
   final int restaurantId;
   final int? userId;
 
-  const AvisRestaurantWidget(
-      {super.key, required this.restaurantId, this.userId});
+  const AvisRestaurantWidget({
+    super.key,
+    required this.restaurantId,
+    this.userId,
+  });
 
   @override
   _AvisRestaurantWidgetState createState() => _AvisRestaurantWidgetState();
@@ -66,8 +69,13 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
         imageUrl = await _uploadImage(File(newImageUrl!));
       }
       try {
-        await dbHelper.addAvis(widget.restaurantId, widget.userId!,
-            newCommentaire, newNote, imageUrl);
+        await dbHelper.addAvis(
+          widget.restaurantId,
+          widget.userId!,
+          newCommentaire,
+          newNote,
+          imageUrl,
+        );
         _loadAvis();
         setState(() {
           newCommentaire = '';
@@ -82,27 +90,34 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Vous devez être connecté pour laisser un avis.')),
+          content: Text('Vous devez être connecté pour laisser un avis.'),
+        ),
       );
     }
   }
 
   Future<String?> _uploadImage(File image) async {
     try {
-      final fileName = path.basename(image.path);
-      final filePath = 'avis/$fileName';
-      await Supabase.instance.client.storage
+      final filePath = 'test.jpg'; // Test avec un nom de fichier simple
+      final response = await Supabase.instance.client.storage
           .from('images')
           .upload(filePath, image);
+
+      try {
+        if (response == null || response.isEmpty) {
+          throw Exception('Aucune donnée trouvée.');
+        }
+      } catch (e) {
+        print('Erreur Supabase: $e');
+        throw e;
+      }
+
       final imageUrl = Supabase.instance.client.storage
           .from('images')
           .getPublicUrl(filePath);
       return imageUrl;
     } catch (e) {
-      print('Erreur lors de l\'upload de l\'image: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de l\'upload de l\'image.')),
-      );
+      print('Upload Error: $e');
       return null;
     }
   }
@@ -123,9 +138,7 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('Laisser un avis'),
-          content: SingleChildScrollView(
-            child: _buildAvisForm(),
-          ),
+          content: SingleChildScrollView(child: _buildAvisForm()),
         );
       },
     );
@@ -146,8 +159,10 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Critiques:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(
+              'Critiques:',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
             if (avisList.isEmpty)
               Text('Aucun avis trouvé.')
             else
@@ -177,12 +192,22 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(DateTime.parse(avis['date_creation']).toString(),
-              style: TextStyle(fontWeight: FontWeight.bold)),
-          if (avis['image_url'] != null) Image.network(avis['image_url']),
+          Text(
+            DateTime.parse(avis['date_creation']).toString(),
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          if (avis['img'] != null)
+            Image.network(
+              avis['img'],
+              width: 200, // Ajustez la largeur selon vos besoins
+              height: 200, // Ajustez la hauteur selon vos besoins
+              fit: BoxFit.cover,
+            ),
           Text(avis['commentaire'] ?? ''),
-          Text('Note: ${avis['note']}/5',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(
+            'Note: ${avis['note']}/5',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           if (widget.userId == avis['id_utilisateur'])
             ElevatedButton(
               onPressed: () => _deleteAvis(avis['id']),
@@ -201,8 +226,12 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
         DropdownButton<int>(
           value: newNote,
           items: List.generate(5, (index) => index + 1)
-              .map((value) =>
-                  DropdownMenuItem(value: value, child: Text(value.toString())))
+              .map(
+                (value) => DropdownMenuItem(
+                  value: value,
+                  child: Text(value.toString()),
+                ),
+              )
               .toList(),
           onChanged: (value) {
             if (value != null) {
@@ -218,16 +247,10 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
           decoration: InputDecoration(border: OutlineInputBorder()),
           maxLines: 3,
         ),
-        ElevatedButton(
-          onPressed: _pickImage,
-          child: Text('Choisir une image'),
-        ),
+        ElevatedButton(onPressed: _pickImage, child: Text('Choisir une image')),
         if (newImageUrl != null)
           Text('Image sélectionnée: ${newImageUrl!.split('/').last}'),
-        ElevatedButton(
-          onPressed: _addAvis,
-          child: Text('Envoyer'),
-        ),
+        ElevatedButton(onPressed: _addAvis, child: Text('Envoyer')),
       ],
     );
   }

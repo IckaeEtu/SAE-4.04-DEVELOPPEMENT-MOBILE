@@ -79,7 +79,7 @@ class SupabaseHelper {
           columnIdUtilisateur: userId,
           'commentaire': commentaire,
           'note': note,
-          'image_url': imageUrl,
+          'img': imageUrl,
         })
         .select(columnId)
         .single();
