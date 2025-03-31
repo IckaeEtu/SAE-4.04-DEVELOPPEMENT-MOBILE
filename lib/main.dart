@@ -24,10 +24,15 @@
 // }
 
 import 'package:flutter/material.dart';
-import 'package:sae_mobile/providers/data.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+<<<<<<<<< Temporary merge branch 1
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'routes/router.dart';
+=========
+import 'package:sae_mobile/data/data.dart';
+>>>>>>>>> Temporary merge branch 2
 
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
