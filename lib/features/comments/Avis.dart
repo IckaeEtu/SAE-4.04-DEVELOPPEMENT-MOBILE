@@ -1,3 +1,4 @@
+// Probablement inutile
 class Avis {
   final int id;
   final int idRestaurant;

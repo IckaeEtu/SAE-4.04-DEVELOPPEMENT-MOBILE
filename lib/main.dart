@@ -24,6 +24,7 @@
 // }
 
 import 'package:flutter/material.dart';
+import 'package:sae_mobile/features/comments/widgets/AvisRestaurantWidget.dart';
 import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -51,10 +52,15 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Text('Supabase Example'),
+          title: Text('Test AvisRestaurantWidget'),
         ),
-        body: Center(
-          child: Text('Supabase Connected!'),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: AvisRestaurantWidget(
+            restaurantId: 1,
+            userId:
+                1, // Remplacez par un ID d'utilisateur valide ou null pour tester sans utilisateur
+          ),
         ),
       ),
     );

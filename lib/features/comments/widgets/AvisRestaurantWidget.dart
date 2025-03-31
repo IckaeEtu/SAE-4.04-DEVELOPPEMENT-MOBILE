@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:sae_mobile/data/data.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:sae_mobile/providers/data.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:path/path.dart' as path;
+import 'dart:io';
 
 class AvisRestaurantWidget extends StatefulWidget {
   final int restaurantId;
   final int? userId;
 
-  const AvisRestaurantWidget({super.key, required this.restaurantId, this.userId});
+  const AvisRestaurantWidget(
+      {super.key, required this.restaurantId, this.userId});
 
   @override
   _AvisRestaurantWidgetState createState() => _AvisRestaurantWidgetState();
@@ -16,7 +21,8 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
   bool isLoading = true;
   int newNote = 1;
   String newCommentaire = '';
-  final dbHelper = DatabaseHelper();
+  String? newImageUrl;
+  final dbHelper = SupabaseHelper();
 
   @override
   void initState() {
@@ -25,57 +31,140 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
   }
 
   Future<void> _loadAvis() async {
-    avisList = await dbHelper.getAvisRestaurant(widget.restaurantId);
     setState(() {
-      isLoading = false;
+      isLoading = true;
     });
+    try {
+      avisList = await dbHelper.getAvisRestaurant(widget.restaurantId);
+      print("avisList: $avisList");
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors du chargement des avis: $e')),
+      );
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   Future<void> _deleteAvis(int avisId) async {
-    await dbHelper.deleteAvis(avisId);
-    _loadAvis();
-  }
-
-  Future<void> _addAvis() async {
-    if (widget.userId != null) {
-      await dbHelper.addAvis(widget.restaurantId, widget.userId!, newCommentaire, newNote);
+    try {
+      await dbHelper.deleteAvis(avisId);
       _loadAvis();
-      setState(() {
-        newCommentaire = '';
-        newNote = 1;
-      });
-    } else {
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Vous devez être connecté pour laisser un avis.')),
+        SnackBar(content: Text('Erreur lors de la suppression de l\'avis: $e')),
       );
     }
   }
 
-@override
-Widget build(BuildContext context) {
-  if (isLoading) {
-    return Center(child: CircularProgressIndicator());
+  Future<void> _addAvis() async {
+    if (widget.userId != null) {
+      String? imageUrl;
+      if (newImageUrl != null) {
+        imageUrl = await _uploadImage(File(newImageUrl!));
+      }
+      try {
+        await dbHelper.addAvis(widget.restaurantId, widget.userId!,
+            newCommentaire, newNote, imageUrl);
+        _loadAvis();
+        setState(() {
+          newCommentaire = '';
+          newNote = 1;
+          newImageUrl = null;
+        });
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de l\'ajout de l\'avis: $e')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Vous devez être connecté pour laisser un avis.')),
+      );
+    }
   }
 
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text('Critiques:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      if (avisList.isEmpty)
-        Text('Aucun avis trouvé.')
-      else
-//List<int> liste1 = [1, 2, 3];
-//List<int> liste2 = [0, ...liste1, 4, 5]; // liste2 contient [0, 1, 2, 3, 4, 5]
-        ...avisList.map((avis) => _buildAvisItem(avis)),
-      SizedBox(height: 20),
-      Text('Laisser un avis:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-      if (widget.userId != null)
-        _buildAvisForm()
-      else
-        Text('Vous devez être connecté pour laisser un avis.'),
-    ],
-  );
-}
+  Future<String?> _uploadImage(File image) async {
+    try {
+      final fileName = path.basename(image.path);
+      final filePath = 'avis/$fileName';
+      await Supabase.instance.client.storage
+          .from('images')
+          .upload(filePath, image);
+      final imageUrl = Supabase.instance.client.storage
+          .from('images')
+          .getPublicUrl(filePath);
+      return imageUrl;
+    } catch (e) {
+      print('Erreur lors de l\'upload de l\'image: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de l\'upload de l\'image.')),
+      );
+      return null;
+    }
+  }
+
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        newImageUrl = pickedFile.path;
+      });
+    }
+  }
+
+  void _showAddAvisDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Laisser un avis'),
+          content: SingleChildScrollView(
+            child: _buildAvisForm(),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showAddAvisDialog(context),
+        child: Icon(Icons.add_comment),
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Critiques:',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            if (avisList.isEmpty)
+              Text('Aucun avis trouvé.')
+            else
+              ListView.builder(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: avisList.length,
+                itemBuilder: (context, index) {
+                  return _buildAvisItem(avisList[index]);
+                },
+              ),
+            SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildAvisItem(Map<String, dynamic> avis) {
     return Container(
@@ -88,9 +177,12 @@ Widget build(BuildContext context) {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(DateTime.parse(avis['date_creation']).toString(), style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(DateTime.parse(avis['date_creation']).toString(),
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          if (avis['image_url'] != null) Image.network(avis['image_url']),
           Text(avis['commentaire'] ?? ''),
-          Text('Note: ${avis['note']}/5', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text('Note: ${avis['note']}/5',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           if (widget.userId == avis['id_utilisateur'])
             ElevatedButton(
               onPressed: () => _deleteAvis(avis['id']),
@@ -109,7 +201,8 @@ Widget build(BuildContext context) {
         DropdownButton<int>(
           value: newNote,
           items: List.generate(5, (index) => index + 1)
-              .map((value) => DropdownMenuItem(value: value, child: Text(value.toString())))
+              .map((value) =>
+                  DropdownMenuItem(value: value, child: Text(value.toString())))
               .toList(),
           onChanged: (value) {
             if (value != null) {
@@ -125,6 +218,12 @@ Widget build(BuildContext context) {
           decoration: InputDecoration(border: OutlineInputBorder()),
           maxLines: 3,
         ),
+        ElevatedButton(
+          onPressed: _pickImage,
+          child: Text('Choisir une image'),
+        ),
+        if (newImageUrl != null)
+          Text('Image sélectionnée: ${newImageUrl!.split('/').last}'),
         ElevatedButton(
           onPressed: _addAvis,
           child: Text('Envoyer'),
