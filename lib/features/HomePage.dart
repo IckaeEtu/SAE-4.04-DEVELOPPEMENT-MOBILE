@@ -1,8 +1,11 @@
-
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sae_mobile/theme/footer.dart';
 import 'package:sae_mobile/theme/header.dart';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final supabase = Supabase.instance.client;
+
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
@@ -10,25 +13,40 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
-  List<String> categories = ['Restaurant étoilé', 'Fast-food', 'Gastronomie'];
-  List<String> images = [
-  '/images/img1.png',
-  '/images/img2.png',
-  '/images/img3.png',
-
-];
-  String searchResult = "";
-  
+  final List<String> categories = [
+    'Restaurant étoilé',
+    'Fast-food',
+    'Gastronomie'
+  ];
+  final List<String> images = [
+    '/images/img1.png',
+    '/images/img2.png',
+    '/images/img3.png'
+  ];
+  Set<Map<String, dynamic>> searchResults = {};
 
   void fetchSearchResults(String query) async {
-    final response = await http.get(Uri.parse('https://yourbackend.com/recuperationRestaurant.php?query=$query'));
-    if (response.statusCode == 200) {
+    try {
+      final response = await supabase
+          .from('restaurant')
+          .select('id, nom, type, adresse')
+          .or("nom.ilike.%$query%, type.ilike.%$query%, adresse.ilike.%$query%");
+
       setState(() {
-        searchResult = response.body;
+        searchResults = response.isNotEmpty
+            ? response
+                .map((r) => {
+                      'id': r['id'],
+                      'nom': r['nom'],
+                      'type': r['type'],
+                      'adresse': r['adresse']
+                    })
+                .toSet()
+            : {};
       });
-    } else {
+    } catch (e) {
       setState(() {
-        searchResult = 'Erreur lors de la récupération des données';
+        searchResults = {};
       });
     }
   }
@@ -38,50 +56,121 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       appBar: Header(isAdmin: true, isLoggedIn: false),
       body: Padding(
-      padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Où manger aujourd'hui ?", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                SizedBox(height: 10),
+            Text("Où manger aujourd'hui ?",
+                style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.deepOrangeAccent)),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 10,
-              children: categories.map((category) => ElevatedButton(
-                onPressed: () {
-                  _searchController.text = category;
-                  fetchSearchResults(category);
-                },
-                child: Text(category),
-              )).toList(),
+              children: categories
+                  .map((category) => ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orangeAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () {
+                          _searchController.text = category;
+                          fetchSearchResults(category);
+                        },
+                        child: Text(category,
+                            style: const TextStyle(fontSize: 16)),
+                      ))
+                  .toList(),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Restaurant gastronomique, fast-food...',
-                border: OutlineInputBorder(),
+                hintText: 'Restaurant gastronomique, fast-food, ville...',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                filled: true,
+                fillColor: Colors.grey[200],
               ),
-              onChanged: (value) {
-                fetchSearchResults(value);
-              },
+              onChanged: fetchSearchResults,
             ),
-            SizedBox(height: 20),
-            Expanded(child: SingleChildScrollView(child: Text(searchResult))),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    const BoxShadow(color: Colors.black12, blurRadius: 5)
+                  ],
+                ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: searchResults.isEmpty
+                        ? [
+                            Text('Aucun restaurant trouvé.',
+                                style: TextStyle(
+                                    fontSize: 16, color: Colors.black87))
+                          ]
+                        : searchResults
+                            .map((restaurant) => GestureDetector(
+                                  onTap: () {
+                                    int restaurantId = restaurant['id'];
+                                    print(
+                                        "Navigation vers le restaurant ID: $restaurantId");
+                                    context.go('/restaurant/$restaurantId');
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10),
+                                    child: Text(
+                                      restaurant['nom'],
+                                      style: const TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.blueAccent,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                ))
+                            .toList(),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: images.map((img) => Padding(
-                padding: const EdgeInsets.all(5.0),
-                child: Image.asset(img, width: 80, height: 80),
-              )).toList(),
+              children: images
+                  .map((img) => Padding(
+                        padding: const EdgeInsets.all(5.0),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.asset(img,
+                              width: 80, height: 80, fit: BoxFit.cover),
+                        ),
+                      ))
+                  .toList(),
             ),
-            SizedBox(height: 10),
-            Center(child: Text('Site développé par : Eliott, Mickael, David et Benjamin')),
-
+            const SizedBox(height: 10),
+            Center(
+              child: Text(
+                'Site développé par : Eliott, Mickael, David et Benjamin',
+                style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[700]),
+              ),
+            ),
             Footer(),
           ],
         ),
       ),
+      backgroundColor: Colors.grey[100],
     );
   }
 }
