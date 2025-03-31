@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:sae_mobile/features/HomePage.dart';
 import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'routes/router.dart';
-import 'package:sae_mobile/data/data.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -15,9 +12,6 @@ void main() async {
   );
 
   final supabaseHelper = SupabaseHelper();
-  await supabaseHelper
-      .initialiserEtRemplirTables("data/restaurants_orleans.json");
-
   runApp(MyApp());
 }
 
