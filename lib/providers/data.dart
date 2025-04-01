@@ -222,8 +222,5 @@ String sampleJson = '''
     "code_commune": 75008
   }
 ]
-<<<<<<< HEAD
+
 ''';
-=======
-''';
->>>>>>> main

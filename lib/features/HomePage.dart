@@ -1,86 +1,206 @@
+import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:sae_mobile/theme/footer.dart';
 import 'package:sae_mobile/theme/header.dart';
-import 'package:http/http.dart' as http;
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final supabase = Supabase.instance.client;
+
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
+  int _selectedIndex = 0;
   final TextEditingController _searchController = TextEditingController();
-  List<String> categories = ['Restaurant étoilé', 'Fast-food', 'Gastronomie'];
-  List<String> images = [
-  '/images/img1.png',
-  '/images/img2.png',
-  '/images/img3.png',
+  final List<String> categories = ['Restaurant Ã©toilÃ©', 'Fast-food', 'Gastronomie'];
+  Set<Map<String, dynamic>> searchResults = {};
+  List<Map<String, dynamic>> topRestaurants = [];
 
-];
-  String searchResult = "";
-  
+  @override
+  void initState() {
+    super.initState();
+    fetchTopRestaurants();
+  }
 
-  void fetchSearchResults(String query) async {
-    final response = await http.get(Uri.parse('https://yourbackend.com/recuperationRestaurant.php?query=$query'));
-    if (response.statusCode == 200) {
-      setState(() {
-        searchResult = response.body;
-      });
-    } else {
-      setState(() {
-        searchResult = 'Erreur lors de la récupération des données';
-      });
-    }
+  void fetchTopRestaurants() async {
+  try {
+    // RÃ©cupÃ©ration des deux meilleurs restaurants avec leurs infos
+    final response = await supabase
+        .from('critique')
+        .select('id_restaurant, restaurant(nom, adresse), avg(note) as moyenne')
+        .order('moyenne', ascending: false) // Tri des notes moyennes (descendant)
+        .limit(2); // On rÃ©cupÃ¨re les 2 meilleurs restaurants
+
+    // Construction de la liste des meilleurs restaurants
+    List<Map<String, dynamic>> fetchedRestaurants = response.map<Map<String, dynamic>>((r) => {
+      'id': r['id_restaurant'],
+      'nom': r['restaurant']['nom'],
+      'adresse': r['restaurant']['adresse'],
+    }).toList();
+
+    setState(() {
+      topRestaurants = fetchedRestaurants; // Mise Ã  jour de la liste des meilleurs restaurants
+    });
+  } catch (e) {
+    print("Erreur lors de la rÃ©cupÃ©ration des meilleurs restaurants: $e");
+  }
+}
+
+
+void fetchSearchResults(String query) async {
+  try {
+    final response = await supabase
+        .from('restaurant')
+        .select('id, nom, type, adresse')
+        .or("nom.ilike.%$query%, type.ilike.%$query%, adresse.ilike.%$query%");
+
+    setState(() {
+      searchResults = response.isNotEmpty
+          ? response.map((r) => {
+              'id': r['id'],
+              'nom': r['nom'],
+              'type': r['type'],
+              'adresse': r['adresse']
+            }).toSet()
+          : {};
+    });
+  } catch (e) {
+    setState(() {
+      searchResults = {};
+    });
+  }
+}
+
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: Header(isAdmin: true, isLoggedIn: false),
-      body: Padding(
-      padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
           children: [
-            Text("Où manger aujourd'hui ?", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-                SizedBox(height: 10),
-            Wrap(
-              spacing: 10,
-              children: categories.map((category) => ElevatedButton(
-                onPressed: () {
-                  _searchController.text = category;
-                  fetchSearchResults(category);
-                },
-                child: Text(category),
-              )).toList(),
+            DrawerHeader(
+              decoration: BoxDecoration(color: Colors.green),
+              child: Text("Menu", style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
-            SizedBox(height: 20),
-            TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Restaurant gastronomique, fast-food...',
-                border: OutlineInputBorder(),
-              ),
-              onChanged: (value) {
-                fetchSearchResults(value);
-              },
+            ListTile(
+              leading: Icon(Icons.star),
+              title: Text("Restaurants Ã  la une"),
+              onTap: () => context.go('/best_rated_restaurant'),
             ),
-            SizedBox(height: 20),
-            Expanded(child: SingleChildScrollView(child: Text(searchResult))),
-            SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: images.map((img) => Padding(
-                padding: const EdgeInsets.all(5.0),
-                child: Image.asset(img, width: 80, height: 80),
-              )).toList(),
+            ListTile(
+              leading: Icon(Icons.feedback),
+              title: Text("Publier un avis"),
+              onTap: () {},
             ),
-            SizedBox(height: 10),
-            Center(child: Text('Site développé par : Eliott, Mickael, David et Benjamin')),
-
-            Footer(),
+            ListTile(
+              leading: Icon(Icons.admin_panel_settings),
+              title: Text("Admin"),
+              onTap: () => context.go('/admin'),
+            ),
+            ListTile(
+              leading: Icon(Icons.logout),
+              title: Text("Se dÃ©connecter"),
+              onTap: () => context.go('/logout'),
+            ),
           ],
         ),
+      ),
+      body: _selectedIndex == 0 ? _buildHomeContent() : _buildSearchContent(),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Recherche'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.orangeAccent,
+        onTap: _onItemTapped,
+      ),
+      backgroundColor: Colors.grey[100],
+    );
+  }
+
+  Widget _buildHomeContent() {
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("OÃ¹ manger aujourd'hui ?", style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepOrangeAccent)),
+        SizedBox(height: 10),
+        Wrap(
+          spacing: 10,
+          children: categories.map((category) => ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent, foregroundColor: Colors.white),
+            onPressed: () {
+              _searchController.text = category;
+              fetchSearchResults(category);
+            },
+            child: Text(category, style: const TextStyle(fontSize: 16)),
+          )).toList(),
+        ),
+        SizedBox(height: 20),
+        Text("Les meilleurs restaurants :", style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        topRestaurants.isEmpty
+            ? Text("Aucun restaurant disponible.", style: TextStyle(fontSize: 16, color: Colors.black54))
+            : Column(
+                children: topRestaurants.map((restaurant) => ListTile(
+                  title: Text(restaurant['nom'], style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  subtitle: Text(restaurant['adresse']),
+                  onTap: () => context.go('/restaurant/${restaurant['id']}'),
+                )).toList(),
+              ),
+      ],
+    ),
+  );
+}
+
+
+  Widget _buildSearchContent() {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Rechercher un restaurant...',
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              filled: true,
+              fillColor: Colors.grey[200],
+            ),
+            onChanged: fetchSearchResults,
+          ),
+          SizedBox(height: 20),
+          Expanded(
+            child: ListView(
+              children: searchResults.isEmpty
+                  ? [Text('Aucun restaurant trouvÃ©.', style: TextStyle(fontSize: 16, color: Colors.black87))]
+                  : searchResults.map((restaurant) => ListTile(
+                        title: Text(restaurant['nom'], style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        subtitle: Text(restaurant['adresse']),
+                        trailing: Icon(Icons.arrow_forward_ios),
+                        onTap: () {
+                          int restaurantId = restaurant['id'];
+                          print("Navigation vers le restaurant ID: $restaurantId");
+                          context.go('/restaurant/$restaurantId');
+                        },
+                      )).toList(),
+            ),
+          ),
+        ],
       ),
     );
   }

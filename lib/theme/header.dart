@@ -7,7 +7,7 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
   const Header({
     Key? key,
     required this.isAdmin,
-    required this.isLoggedIn,
+    required this.isLoggedIn, required List<IconButton> actions,
   }) : super(key: key);
 
   @override

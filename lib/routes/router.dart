@@ -1,25 +1,33 @@
 import 'package:flutter/material.dart';
-import 'package:go_routeur/go_routeur.dart';
+import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../features/auth/screens/connexionInscription.dart';
+import '../features/HomePage.dart';
 
-import 'RestaurantDetailScreen.dart';
-import 'HomePage.dart';
+final GoRouter router = GoRouter(
+  redirect: (BuildContext context, GoRouterState state) {
+    final session = Supabase.instance.client.auth.currentSession;
+    final isAuthenticated = session != null;
 
-// Pour l'utiliser il faut mettre dans le bouton "contect.go('lien de la page: /restaurant/123)"
-final GoRouteur routeur = GoRouteur(
-    routes: <RouteBase>[
-        GoRoute(
-            path: '/',
-            builder: () {
-                return HomePage();
-            },
-        ),
-        GoRoute(
-            path: '/restaurant/:id',
-            builder: (context, state) {
-                final id = int.parse(state.params['id']);
-                return RestaurantDetailScreen(restaurantId: id);
-            },
-        ),
-        // Les autres routes qu'on devra mettre ..
-    ]
-)
+    // Utilisez state.uri.path au lieu de state.location
+    if (state.uri.path == '/' && isAuthenticated) {
+      return '/home';
+    }
+
+    if (!isAuthenticated && state.uri.path == '/home') {
+      return '/';
+    }
+
+    return null;
+  },
+  routes: <GoRoute>[
+    GoRoute(
+      path: '/',
+      builder: (BuildContext context, GoRouterState state) => AuthPage(),
+    ),
+    GoRoute(
+      path: '/home',
+      builder: (BuildContext context, GoRouterState state) => HomePage(),
+    ),
+  ],
+);

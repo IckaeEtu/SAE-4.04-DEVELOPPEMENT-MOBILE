@@ -1,65 +1,32 @@
-// import 'package:flutter/material.dart';
-// import 'package:sae_mobile/data/data.dart';
-
-// void main() async {
-//   WidgetsFlutterBinding.ensureInitialized();
-//   final dbHelper = DatabaseHelper();
-//   await dbHelper.testDatabase();
-
-//   runApp(MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       home: Scaffold(
-//         appBar: AppBar(title: Text('Test Database')),
-//         body: Center(
-//           child: Text('Voir la console pour les résultats des tests.'),
-//         ),
-//       ),
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'routes/router.dart';
-import 'package:sae_mobile/data/data.dart';
-import 'package:sae_mobile/features/auth/screens/connexionInscription.dart';
-import 'package:sae_mobile/features/auth/screens/apresConnexion.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'routes/router.dart'; // Assurez-vous que le chemin est correct
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialisation de Supabase
   await Supabase.initialize(
     url: 'https://whkthddurdismomaktwj.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indoa3RoZGR1cmRpc21vbWFrdHdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMxNDY3MzQsImV4cCI6MjA1ODcyMjczNH0.w91hFeZKgnJ0rmqDM4hf99xHyLCcCqG4vU2qDQTd7hs',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indoa3RoZGR1cmRpc21vbWFrdHdqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDMxNDY3MzQsImV4cCI6MjA1ODcyMjczNH0.w91hFeZKgnJ0rmqDM4hf99xHyLCcCqG4vU2qDQTd7hs',
   );
 
-  final supabaseHelper = SupabaseHelper();
-  await supabaseHelper
-      .initialiserEtRemplirTables("data/restaurants_orleans.json");
-
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
-final supabase = Supabase.instance.client;
-
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return MaterialApp.router(
       debugShowCheckedModeBanner: false,
-      title: 'Auth App',
-      initialRoute: '/',
-      routes: {
-        '/': (context) => AuthPage(),
-        '/home': (context) => HomePage(),
-        '/auth': (context) => AuthPage(),
-      },
+      title: 'Mon Application',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      routerConfig: router, // Utilisez la variable router que vous avez définie
     );
   }
 }

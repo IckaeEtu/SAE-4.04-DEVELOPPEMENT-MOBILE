@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,16 +24,23 @@ class _AuthPageState extends State<AuthPage> {
     });
 
     try {
+      final email = _emailController.text.trim();
+      final password = _passwordController.text.trim();
+
+      if (email.isEmpty || password.isEmpty) {
+        throw 'Veuillez remplir tous les champs.';
+      }
+
       AuthResponse response;
       if (_isLogin) {
         response = await supabase.auth.signInWithPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: email,
+          password: password,
         );
       } else {
         response = await supabase.auth.signUp(
-          email: _emailController.text.trim(),
-          password: _passwordController.text.trim(),
+          email: email,
+          password: password,
         );
       }
 
@@ -40,7 +48,13 @@ class _AuthPageState extends State<AuthPage> {
       if (user != null) {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('user_id', user.id);
-        Navigator.pushReplacementNamed(context, '/home');
+        
+        // CORRECTION ICI : Suppression du onPressed: inutile
+        if (mounted) {  // Vérifie que le widget est toujours dans l'arbre
+          context.go('/home');  // Navigation directe
+        }
+      } else {
+        throw 'Échec de la connexion. Vérifiez vos informations.';
       }
     } catch (error) {
       setState(() {
@@ -53,6 +67,30 @@ class _AuthPageState extends State<AuthPage> {
     }
   }
 
+  Future<void> _resetPassword() async {
+    final email = _emailController.text.trim();
+    if (email.isEmpty) {
+      setState(() {
+        _errorMessage = 'Veuillez entrer votre email pour réinitialiser votre mot de passe.';
+      });
+      return;
+    }
+
+    try {
+      await supabase.auth.resetPasswordForEmail(email);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Email de réinitialisation envoyé. Vérifiez votre boîte mail.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (error) {
+      setState(() {
+        _errorMessage = 'Erreur : Impossible d\'envoyer l\'email de réinitialisation.';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -61,7 +99,6 @@ class _AuthPageState extends State<AuthPage> {
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: SingleChildScrollView(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
@@ -89,12 +126,26 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                   obscureText: true,
                 ),
+                if (_isLogin)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _resetPassword,
+                      child: Text(
+                        'Mot de passe oublié ?',
+                        style: TextStyle(color: Colors.blue, fontSize: 14),
+                      ),
+                    ),
+                  ),
                 SizedBox(height: 16),
                 if (_errorMessage != null)
-                  Text(
-                    _errorMessage!,
-                    style: TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Text(
+                      _errorMessage!,
+                      style: TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 SizedBox(height: 16),
                 ElevatedButton(
