@@ -236,4 +236,52 @@ class SupabaseHelper {
   return response as Map<String, dynamic>?;
 }
 
+extension on PostgrestMap {
+  get error => null;
+
+  get data => null;
+}
+
+extension on PostgrestList {
+  get error => null;
+
+  get data => null;
+}
+
+String sampleJson = '''
+[
+  {
+    "name": "Restaurant A",
+    "type": "Italian",
+    "com_nom": "Rue de la Paix",
+    "commune": "Paris",
+    "phone": "0123456789",
+    "website": "www.restaurant-a.com",
+    "description": "Un restaurant italien authentique.",
+    "photo": "restaurant_a.jpg",
+    "opening_hours": "12:00-22:00",
+    "wheelchair": "yes",
+    "code_region": 11,
+    "code_departement": 75,
+    "code_commune": 75101
+  },
+  {
+    "name": "Restaurant B",
+    "type": "French",
+    "com_nom": "Avenue des Champs-Élysées",
+    "commune": "Paris",
+    "phone": "0987654321",
+    "website": "www.restaurant-b.com",
+    "description": "Un restaurant français classique.",
+    "photo": "restaurant_b.jpg",
+    "opening_hours": "19:00-23:00",
+    "wheelchair": "no",
+    "code_region": 11,
+    "code_departement": 75,
+    "code_commune": 75008
+  }
+]
+
+''';
+
 }
