@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:sae_mobile/features/HomePage.dart';
 import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
+import 'package:flutter_web_plugins/flutter_web_plugins.dart';
+import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Supabase.initialize(
     url: 'https://whkthddurdismomaktwj.supabase.co',
     anonKey:
@@ -12,6 +15,7 @@ void main() async {
   );
 
   final supabaseHelper = SupabaseHelper();
+
   runApp(MyApp());
 }
 
