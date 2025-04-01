@@ -14,136 +14,127 @@ class SupabaseHelper {
   static const String columnIdRestaurant = 'id_restaurant';
   static const String columnNom = 'nom';
 
-  // Fonctions d'accès aux données (à adapter)
+  // Récupérer les avis d'un utilisateur
   Future<List<Map<String, dynamic>>> getAvisUser(int userId) async {
-    print('Récupération des avis pour l\'utilisateur $userId...');
-    final response = await supabase
-        .from(tableCritique)
-        .select()
-        .eq(columnIdUtilisateur, userId);
     try {
-      if (response == null || response.isEmpty) {
-        throw Exception('Aucune donnée trouvée.');
-      }
+      final response = await supabase
+          .from(tableCritique)
+          .select()
+          .eq(columnIdUtilisateur, userId);
+
+      return response as List<Map<String, dynamic>>;
     } catch (e) {
-      print('Erreur Supabase: $e');
-      throw e;
+      print('Erreur lors de la récupération des avis utilisateur: $e');
+      return [];
     }
-    print('Avis de l\'utilisateur $userId: ${response}');
-    return response as List<Map<String, dynamic>>;
   }
 
+  // Récupérer un avis par son ID
   Future<Map<String, dynamic>?> getAvisById(int avisId) async {
-    print('Récupération de l\'avis $avisId...');
-    final response = await supabase
-        .from(tableCritique)
-        .select()
-        .eq(columnId, avisId)
-        .single();
     try {
-      if (response == null || response.isEmpty) {
-        throw Exception('Aucune donnée trouvée.');
-      }
+      final response = await supabase
+          .from(tableCritique)
+          .select()
+          .eq(columnId, avisId)
+          .single();
+
+      return response as Map<String, dynamic>?;
     } catch (e) {
-      print('Erreur Supabase: $e');
-      throw e;
+      print('Erreur lors de la récupération de l\'avis: $e');
+      return null;
     }
-    return response as Map<String, dynamic>?;
   }
 
+  // Récupérer les avis d'un restaurant
   Future<List<Map<String, dynamic>>> getAvisRestaurant(int restaurantId) async {
-    print('Récupération des avis pour le restaurant $restaurantId...');
-    final response = await supabase
-        .from(tableCritique)
-        .select()
-        .eq(columnIdRestaurant, restaurantId);
     try {
-      if (response == null || response.isEmpty) {
-        throw Exception('Aucune donnée trouvée.');
-      }
+      final response = await supabase
+          .from(tableCritique)
+          .select()
+          .eq(columnIdRestaurant, restaurantId);
+
+      return response as List<Map<String, dynamic>>;
     } catch (e) {
-      print('Erreur Supabase: $e');
-      throw e;
+      print('Erreur lors de la récupération des avis restaurant: $e');
+      return [];
     }
-    print('Avis du restaurant $restaurantId: ${response}');
-    return response as List<Map<String, dynamic>>;
   }
 
-  Future<int> addAvis(int restaurantId, int userId, String commentaire,
-      int note, String? imageUrl) async {
-    print('Ajout d\'un avis pour le restaurant $restaurantId...');
-    final response = await supabase
-        .from(tableCritique)
-        .insert({
-          columnIdRestaurant: restaurantId,
-          columnIdUtilisateur: userId,
-          'commentaire': commentaire,
-          'note': note,
-          'image_url': imageUrl,
-        })
-        .select(columnId)
-        .single();
-
+  // Ajouter un avis
+  Future<int?> addAvis(
+      int restaurantId, int userId, String commentaire, int note, String? imageUrl) async {
     try {
-      if (response == null || response.isEmpty) {
-        throw Exception('Aucune donnée trouvée.');
-      }
+      final response = await supabase.from(tableCritique).insert({
+        columnIdRestaurant: restaurantId,
+        columnIdUtilisateur: userId,
+        'commentaire': commentaire,
+        'note': note,
+        'image_url': imageUrl,
+      }).select(columnId).single();
+
+      return response[columnId] as int?;
     } catch (e) {
-      print('Erreur Supabase: $e');
-      throw e;
+      print('Erreur lors de l\'ajout de l\'avis: $e');
+      return null;
     }
-    return (response as Map<String, dynamic>)[columnId] as int;
   }
 
-  Future<int> deleteAvis(int avisId) async {
-    print('Suppression de l\'avis $avisId...');
-    final response =
-        await supabase.from(tableCritique).delete().eq(columnId, avisId);
-
-    if (response.error != null) {
-      print('Erreur Supabase: ${response.error}');
-      throw response.error!;
+  // Supprimer un avis
+  Future<bool> deleteAvis(int avisId) async {
+    try {
+      final response = await supabase.from(tableCritique).delete().eq(columnId, avisId);
+      return response.count != null && response.count! > 0;
+    } catch (e) {
+      print('Erreur lors de la suppression de l\'avis: $e');
+      return false;
     }
-    print('Avis $avisId supprimé.');
-    return response.count ?? 0;
   }
 
+  // Récupérer tous les restaurants
   Future<List<Map<String, dynamic>>> getAllRestaurant() async {
-    print('Récupération de tous les restaurants...');
-    final response = await supabase.from(tableRestaurant).select();
     try {
-      if (response == null || response.isEmpty) {
-        throw Exception('Aucune donnée trouvée.');
-      }
+      final response = await supabase.from(tableRestaurant).select();
+      return response as List<Map<String, dynamic>>;
     } catch (e) {
-      print('Erreur Supabase: $e');
-      throw e;
+      print('Erreur lors de la récupération des restaurants: $e');
+      return [];
     }
-    print('Restaurants récupérés: ${response}');
-    return response as List<Map<String, dynamic>>;
   }
 
+  // Récupérer un restaurant par son nom
   Future<Map<String, dynamic>?> getRestaurant(String nom) async {
-    print('Récupération du restaurant $nom...');
-    final response = await supabase
-        .from(tableRestaurant)
-        .select()
-        .eq(columnNom, nom)
-        .single();
-
     try {
-      if (response == null || response.isEmpty) {
-        throw Exception('Aucune donnée trouvée.');
-      }
+      final response = await supabase
+          .from(tableRestaurant)
+          .select()
+          .eq(columnNom, nom)
+          .single();
+
+      return response as Map<String, dynamic>?;
     } catch (e) {
-      print('Erreur Supabase: $e');
-      throw e;
+      print('Erreur lors de la récupération du restaurant: $e');
+      return null;
     }
-    return response as Map<String, dynamic>?;
   }
 
+  // Récupérer un restaurant par son ID
+  Future<Map<String, dynamic>?> getRestaurantById(int id) async {
+    try {
+      final response = await supabase
+          .from(tableRestaurant)
+          .select()
+          .eq(columnId, id)
+          .single();
+
+      return response as Map<String, dynamic>?;
+    } catch (e) {
+      print('Erreur lors de la récupération du restaurant par ID: $e');
+      return null;
+    }
+  }
+
+  // Extraire et insérer des restaurants depuis un JSON
   Future<bool> extraireRestaurants(String json) async {
-    print('Extraction des restaurants...');
     try {
       final restaurants = jsonDecode(json) as List<dynamic>;
 
@@ -167,7 +158,6 @@ class SupabaseHelper {
           });
         }
       }
-      print('Extraction réussie.');
       return true;
     } catch (e) {
       print('Erreur lors de l\'extraction des restaurants : $e');
@@ -175,8 +165,8 @@ class SupabaseHelper {
     }
   }
 
+  // Initialiser et remplir la table restaurants depuis un fichier JSON
   Future<void> initialiserEtRemplirTables(String chemin) async {
-    print('Initialisation des tables...');
     final prefs = await SharedPreferences.getInstance();
     final isInitialized = prefs.getBool('tables_initialized') ?? false;
 
@@ -185,7 +175,6 @@ class SupabaseHelper {
         final jsonString = await rootBundle.loadString(chemin);
         final restaurants = jsonDecode(jsonString) as List<dynamic>;
 
-        // 1. Initialisation de la table Restaurant
         for (var restaurant in restaurants) {
           await supabase.from(tableRestaurant).insert({
             columnNom: restaurant['name'],
@@ -203,85 +192,10 @@ class SupabaseHelper {
           });
         }
 
-        print('Table Restaurant initialisée et remplie avec succès.');
-
-        // ... (initialisation des autres tables)
-
         await prefs.setBool('tables_initialized', true);
-        print('Tables initialisées et remplies avec succès.');
       } catch (e) {
-        print(
-            'Erreur lors de l\'initialisation et du remplissage des tables : $e');
+        print('Erreur lors de l\'initialisation des tables: $e');
       }
-    } else {
-      print('Tables déjà initialisées.');
     }
   }
-  Future<Map<String, dynamic>?> getRestaurantById(int id) async {
-  print('Récupération du restaurant avec l\'id $id...');
-  final response = await supabase
-      .from(tableRestaurant)
-      .select()
-      .eq(columnId, id)
-      .single();
-
-  try {
-    if (response == null || response.isEmpty) {
-      throw Exception('Aucune donnée trouvée.');
-    }
-  } catch (e) {
-    print('Erreur Supabase: $e');
-    throw e;
-  }
-  return response as Map<String, dynamic>?;
-}
-
-extension on PostgrestMap {
-  get error => null;
-
-  get data => null;
-}
-
-extension on PostgrestList {
-  get error => null;
-
-  get data => null;
-}
-
-String sampleJson = '''
-[
-  {
-    "name": "Restaurant A",
-    "type": "Italian",
-    "com_nom": "Rue de la Paix",
-    "commune": "Paris",
-    "phone": "0123456789",
-    "website": "www.restaurant-a.com",
-    "description": "Un restaurant italien authentique.",
-    "photo": "restaurant_a.jpg",
-    "opening_hours": "12:00-22:00",
-    "wheelchair": "yes",
-    "code_region": 11,
-    "code_departement": 75,
-    "code_commune": 75101
-  },
-  {
-    "name": "Restaurant B",
-    "type": "French",
-    "com_nom": "Avenue des Champs-Élysées",
-    "commune": "Paris",
-    "phone": "0987654321",
-    "website": "www.restaurant-b.com",
-    "description": "Un restaurant français classique.",
-    "photo": "restaurant_b.jpg",
-    "opening_hours": "19:00-23:00",
-    "wheelchair": "no",
-    "code_region": 11,
-    "code_departement": 75,
-    "code_commune": 75008
-  }
-]
-
-''';
-
 }
