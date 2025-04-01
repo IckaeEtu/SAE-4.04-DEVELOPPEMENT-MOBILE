@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sae_mobile/features/HomePage.dart';
 import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
-import 'package:flutter_web_plugins/flutter_web_plugins.dart';
-import 'package:google_maps_flutter_web/google_maps_flutter_web.dart';
+import 'package:sae_mobile/features/restaurants/screens/RestaurantDetailScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -17,16 +15,20 @@ void main() async {
   final supabaseHelper = SupabaseHelper();
 
   runApp(MyApp());
+  // await dbHelper.testDatabase();
 }
 
 final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: HomePage(), 
+      home: RestaurantDetailScreen(
+        restaurantId: 1,
+      ),
     );
   }
 }
