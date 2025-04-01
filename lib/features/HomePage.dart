@@ -13,11 +13,10 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final TextEditingController _searchController = TextEditingController();
-  final List<String> categories = ['Restaurant étoilé', 'Fast-food', 'Gastronomie'];
   List<Map<String, dynamic>> searchResults = [];
   List<Map<String, dynamic>> topRestaurants = [];
   GoogleMapController? mapController;
-  LatLng _currentPosition = LatLng(48.8566, 2.3522); // Paris
+  LatLng _currentPosition = LatLng(48.8566, 2.3522);
   final Set<Marker> _markers = {};
 
   @override
@@ -87,21 +86,6 @@ class _HomePageState extends State<HomePage> {
           Text("Où manger aujourd'hui ?", 
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepOrangeAccent)),
           SizedBox(height: 10),
-          Wrap(
-            spacing: 10,
-            children: categories
-                .map((category) => ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orangeAccent, foregroundColor: Colors.white),
-                      onPressed: () {
-                        _searchController.text = category;
-                        fetchSearchResults(category);
-                      },
-                      child: Text(category, style: const TextStyle(fontSize: 16)),
-                    ))
-                .toList(),
-          ),
-          SizedBox(height: 20),
           Text("Les meilleurs restaurants :", 
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           topRestaurants.isEmpty
