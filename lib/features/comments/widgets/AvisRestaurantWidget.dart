@@ -4,6 +4,7 @@ import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
+import 'package:image/image.dart' as img;
 
 class AvisRestaurantWidget extends StatefulWidget {
   final int restaurantId;
@@ -66,6 +67,7 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
     if (widget.userId != null) {
       String? imageUrl;
       if (newImageUrl != null) {
+        print('Image sélectionnée: $newImageUrl');
         imageUrl = await _uploadImage(File(newImageUrl!));
       }
       try {
@@ -84,7 +86,7 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
         });
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de l\'ajout de l\'avis: $e')),
+          SnackBar(content: Text('Erreur lors de l\'ajout de l\'avis : $e')),
         );
       }
     } else {
@@ -98,11 +100,14 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
 
   Future<String?> _uploadImage(File image) async {
     try {
-      final filePath = 'test.jpg'; // Test avec un nom de fichier simple
+      print('Chemin de l\'image : ${image.path}');
+      final fileName = path.basename(image.path);
+      print('Nom du fichier : $fileName');
+      final filePath = 'image/$fileName';
+      print('Chemin du fichier sur Supabase : $filePath');
       final response = await Supabase.instance.client.storage
           .from('images')
           .upload(filePath, image);
-
       try {
         if (response == null || response.isEmpty) {
           throw Exception('Aucune donnée trouvée.');
@@ -111,24 +116,54 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
         print('Erreur Supabase: $e');
         throw e;
       }
-
       final imageUrl = Supabase.instance.client.storage
           .from('images')
           .getPublicUrl(filePath);
+      print('URL de l\'image : $imageUrl');
       return imageUrl;
     } catch (e) {
-      print('Upload Error: $e');
+      print('Erreur lors de l\'upload de l\'image : $e');
       return null;
     }
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+
     if (pickedFile != null) {
-      setState(() {
-        newImageUrl = pickedFile.path;
-      });
+      final extension = path.extension(pickedFile.path).toLowerCase();
+      if (extension == '.jpg' || extension == '.png' || extension == '.jpeg') {
+        final file = File(pickedFile.path);
+        final sizeInBytes = await file.length();
+        final sizeInKB = sizeInBytes / 1024;
+
+        if (sizeInKB > 0 && sizeInKB <= 1024) {
+          final bytes = await file.readAsBytes();
+          final image = img.decodeImage(bytes);
+
+          if (image != null && image.width > 100 && image.height > 100) {
+            // L'image est valide
+            // ...
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Dimensions de l\'image non valides.')),
+            );
+          }
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Taille du fichier non valide.')),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fichier non valide.')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Aucune image sélectionnée.')),
+      );
     }
   }
 
@@ -196,7 +231,7 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
             DateTime.parse(avis['date_creation']).toString(),
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
-          if (avis['img'] != null) // Modification ici
+          if (avis['img'] != null)
             Image.network(
               avis['img'],
               width: 200,
@@ -205,7 +240,7 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
             ),
           Text(avis['commentaire'] ?? ''),
           Text(
-            'Note: ${avis['note']}/5',
+            'Note : ${avis['note']}/5',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           if (widget.userId == avis['id_utilisateur'])
