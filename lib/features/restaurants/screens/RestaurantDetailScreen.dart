@@ -1,76 +1,94 @@
-// // lib/features/restaurants/screens/restaurant_detail_screen.dart
+import 'package:flutter/material.dart';
+import 'package:sae_mobile/core/models/Restaurant.dart';
+import 'package:sae_mobile/features/restaurants/providers/RestaurantProvider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart'; 
 
-// import 'package:flutter/material.dart';
-// import 'package:go_router/go_router.dart';
-// import 'package:provider/provider.dart';
-// import '../../core/models/restaurant.dart';
-// import '../../core/models/avis.dart';
-// import '../../providers/restaurant_provider.dart'; // Exemple de Provider
+class RestaurantDetailScreen extends StatefulWidget {
+  final int restaurantId;
 
-// class RestaurantDetailScreen extends StatelessWidget {
-//   final int restaurantId;
+  const RestaurantDetailScreen({Key? key, required this.restaurantId})
+      : super(key: key);
 
-//   RestaurantDetailScreen({required this.restaurantId});
+  @override
+  _RestaurantDetailScreenState createState() => _RestaurantDetailScreenState();
+}
 
-//   @override
-//   Widget build(BuildContext context) {
-//     // Utilisation d'un Provider pour gérer l'état du restaurant
-//     final restaurantProvider = Provider.of<RestaurantProvider>(context);
+class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
+  Future<Restaurant?>? _restaurantFuture;
+  final _supabaseClient = Supabase.instance.client;
 
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('Détails du Restaurant'),
-//       ),
-//       body: FutureBuilder<Restaurant>(
-//         // Utilisation de la fonction GetRestaurantById importée
-//         future: Data.GetRestaurantById(restaurantId),
-//         builder: (context, snapshot) {
-//           if (snapshot.connectionState == ConnectionState.waiting) {
-//             return Center(child: CircularProgressIndicator());
-//           } else if (snapshot.hasError) {
-//             return Center(child: Text('Erreur: ${snapshot.error}'));
-//           } else if (snapshot.hasData) {
-//             final restaurant = snapshot.data!;
-//             return Padding(
-//               padding: const EdgeInsets.all(16.0),
-//               child: ListView(
-//                 children: [
-//                   _buildRestaurantDetails(restaurant),
-//                   SizedBox(height: 20),
-//                   // Utilisation du widget ReviewWidget pour la gestion des avis
-//                   ReviewWidget(restaurantId: restaurantId),
-//                 ],
-//               ),
-//             );
-//           } else {
-//             return Center(child: Text('Restaurant non trouvé'));
-//           }
-//         },
-//       ),
-//     );
-//   }
+  @override
+  void initState() {
+    super.initState();
+    _restaurantFuture = _fetchRestaurantDetails();
+  }
 
-//   // Widget pour afficher les détails du restaurant
-//   Widget _buildRestaurantDetails(Restaurant restaurant) {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Text(
-//           restaurant.nom,
-//           style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-//         ),
-//         SizedBox(height: 8),
-//         Text(
-//           restaurant.adresse,
-//           style: TextStyle(fontSize: 16),
-//         ),
-//         SizedBox(height: 8),
-//         Text(
-//           'Type: ${restaurant.type}',
-//           style: TextStyle(fontSize: 16),
-//         ),
-//         // ... Autres détails (téléphone, site web, etc.)
-//       ],
-//     );
-//   }
-// }
+  Future<Restaurant?> _fetchRestaurantDetails() async {
+    try {
+      print('Fetching restaurant with ID: ${widget.restaurantId}');
+      final result =
+          await _supabaseClient.from('restaurant').select().eq('id', widget.restaurantId);
+      print('Query result: $result');
+      if (result != null && result.isNotEmpty) {
+        final restaurant = Restaurant.fromMap((result as List).first);
+        return restaurant;
+      }
+      return null;
+    } catch (e) {
+      print("Error fetching restaurant details: $e");
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Détails du restaurant')),
+      body: FutureBuilder<Restaurant?>(
+        future: _restaurantFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Erreur : ${snapshot.error}'));
+          } else if (snapshot.hasData && snapshot.data != null) {
+            return _buildRestaurantDetails(snapshot.data!);
+          } else {
+            return const Center(child: Text('Restaurant introuvable'));
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildRestaurantDetails(Restaurant restaurant) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(restaurant.nom, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const Icon(Icons.location_on, size: 16, color: Colors.grey),
+              const SizedBox(width: 4),
+              Expanded(child: Text(restaurant.adresse, style: const TextStyle(fontSize: 16))),
+            ],
+          ),
+          const Divider(),
+          Row(
+            children: [
+              const Icon(Icons.category, size: 16, color: Colors.grey),
+              const SizedBox(width: 4),
+              Text('Type: ${restaurant.type}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+            ],
+          ),
+          const Divider(),
+          Text('Description:', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          Text(restaurant.description ?? 'N/A', style: const TextStyle(fontSize: 16)),
+        ],
+      ),
+    );
+  }
+}

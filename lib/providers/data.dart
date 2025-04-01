@@ -1,86 +1,149 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/services.dart';
 
 final supabase = Supabase.instance.client;
 
 class SupabaseHelper {
+  // Constantes pour les noms de tables et de colonnes
+  static const String tableCritique = 'critique';
+  static const String tableRestaurant = 'restaurant';
+  static const String columnId = 'id';
+  static const String columnIdUtilisateur = 'id_utilisateur';
+  static const String columnIdRestaurant = 'id_restaurant';
+  static const String columnNom = 'nom';
+
   // Fonctions d'accès aux données (à adapter)
   Future<List<Map<String, dynamic>>> getAvisUser(int userId) async {
-    final response =
-        await supabase.from('Critique').select().eq('id_utilisateur', userId);
-    if (response.error != null) {
-      throw response.error!;
+    print('Récupération des avis pour l\'utilisateur $userId...');
+    final response = await supabase
+        .from(tableCritique)
+        .select()
+        .eq(columnIdUtilisateur, userId);
+    try {
+      if (response == null || response.isEmpty) {
+        throw Exception('Aucune donnée trouvée.');
+      }
+    } catch (e) {
+      print('Erreur Supabase: $e');
+      throw e;
     }
-    return response.data as List<Map<String, dynamic>>;
+    print('Avis de l\'utilisateur $userId: ${response}');
+    return response as List<Map<String, dynamic>>;
   }
 
   Future<Map<String, dynamic>?> getAvisById(int avisId) async {
-    final response =
-        await supabase.from('Critique').select().eq('id', avisId).single();
-    if (response.error != null) {
-      throw response.error!;
+    print('Récupération de l\'avis $avisId...');
+    final response = await supabase
+        .from(tableCritique)
+        .select()
+        .eq(columnId, avisId)
+        .single();
+    try {
+      if (response == null || response.isEmpty) {
+        throw Exception('Aucune donnée trouvée.');
+      }
+    } catch (e) {
+      print('Erreur Supabase: $e');
+      throw e;
     }
-    return response.data as Map<String, dynamic>?;
+    return response as Map<String, dynamic>?;
   }
 
   Future<List<Map<String, dynamic>>> getAvisRestaurant(int restaurantId) async {
+    print('Récupération des avis pour le restaurant $restaurantId...');
     final response = await supabase
-        .from('Critique')
+        .from(tableCritique)
         .select()
-        .eq('id_restaurant', restaurantId);
-    if (response.error != null) {
-      throw response.error!;
+        .eq(columnIdRestaurant, restaurantId);
+    try {
+      if (response == null || response.isEmpty) {
+        throw Exception('Aucune donnée trouvée.');
+      }
+    } catch (e) {
+      print('Erreur Supabase: $e');
+      throw e;
     }
-    return response.data as List<Map<String, dynamic>>;
+    print('Avis du restaurant $restaurantId: ${response}');
+    return response as List<Map<String, dynamic>>;
   }
 
-  Future<int> addAvis(
-      int userId, int restaurantId, String avis, int note) async {
+  Future<int> addAvis(int restaurantId, int userId, String commentaire,
+      int note, String? imageUrl) async {
+    print('Ajout d\'un avis pour le restaurant $restaurantId...');
     final response = await supabase
-        .from('Critique')
+        .from(tableCritique)
         .insert({
-          'id_utilisateur': userId,
-          'id_restaurant': restaurantId,
-          'commentaire': avis,
+          columnIdRestaurant: restaurantId,
+          columnIdUtilisateur: userId,
+          'commentaire': commentaire,
           'note': note,
+          'image_url': imageUrl,
         })
-        .select('id')
+        .select(columnId)
         .single();
 
-    if (response.error != null) {
-      throw response.error!;
+    try {
+      if (response == null || response.isEmpty) {
+        throw Exception('Aucune donnée trouvée.');
+      }
+    } catch (e) {
+      print('Erreur Supabase: $e');
+      throw e;
     }
-    return response.data['id'] as int;
+    return (response as Map<String, dynamic>)[columnId] as int;
   }
 
   Future<int> deleteAvis(int avisId) async {
-    final response = await supabase.from('Critique').delete().eq('id', avisId);
+    print('Suppression de l\'avis $avisId...');
+    final response =
+        await supabase.from(tableCritique).delete().eq(columnId, avisId);
+
     if (response.error != null) {
+      print('Erreur Supabase: ${response.error}');
       throw response.error!;
     }
+    print('Avis $avisId supprimé.');
     return response.count ?? 0;
   }
 
   Future<List<Map<String, dynamic>>> getAllRestaurant() async {
-    final response = await supabase.from('restaurant').select();
-    if (response.error != null) {
-      throw response.error!;
+    print('Récupération de tous les restaurants...');
+    final response = await supabase.from(tableRestaurant).select();
+    try {
+      if (response == null || response.isEmpty) {
+        throw Exception('Aucune donnée trouvée.');
+      }
+    } catch (e) {
+      print('Erreur Supabase: $e');
+      throw e;
     }
-    return response.data as List<Map<String, dynamic>>;
+    print('Restaurants récupérés: ${response}');
+    return response as List<Map<String, dynamic>>;
   }
 
   Future<Map<String, dynamic>?> getRestaurant(String nom) async {
-    final response =
-        await supabase.from('restaurant').select().eq('nom', nom).single();
-    if (response.error != null) {
-      throw response.error!;
+    print('Récupération du restaurant $nom...');
+    final response = await supabase
+        .from(tableRestaurant)
+        .select()
+        .eq(columnNom, nom)
+        .single();
+
+    try {
+      if (response == null || response.isEmpty) {
+        throw Exception('Aucune donnée trouvée.');
+      }
+    } catch (e) {
+      print('Erreur Supabase: $e');
+      throw e;
     }
-    return response.data as Map<String, dynamic>?;
+    return response as Map<String, dynamic>?;
   }
 
   Future<bool> extraireRestaurants(String json) async {
+    print('Extraction des restaurants...');
     try {
       final restaurants = jsonDecode(json) as List<dynamic>;
 
@@ -88,12 +151,12 @@ class SupabaseHelper {
         final existingRestaurant = await getRestaurant(restaurant['name']);
 
         if (existingRestaurant == null) {
-          await supabase.from('restaurant').insert({
-            'nom': restaurant['name'],
+          await supabase.from(tableRestaurant).insert({
+            columnNom: restaurant['name'],
             'type': restaurant['type'],
             'adresse': '${restaurant['com_nom']}, ${restaurant['commune']}',
-            'telephone': restaurant['phone'],
-            'siteweb': restaurant['website'],
+            'telephone': restaurant['phone'] ?? 'Non renseigné',
+            'siteweb': restaurant['website'] ?? 'Non renseigné',
             'description': restaurant['description'] ?? 'Aucune description',
             'photo': restaurant['photo'],
             'opening_hours': restaurant['opening_hours'],
@@ -104,6 +167,7 @@ class SupabaseHelper {
           });
         }
       }
+      print('Extraction réussie.');
       return true;
     } catch (e) {
       print('Erreur lors de l\'extraction des restaurants : $e');
@@ -111,30 +175,8 @@ class SupabaseHelper {
     }
   }
 
-  Future<void> testDatabase() async {
-    print('Début des tests de la base de données...');
-
-    final extractionSuccess = await extraireRestaurants(sampleJson);
-    if (extractionSuccess) {
-      print('Extraction des restaurants réussie.');
-    } else {
-      print('Erreur lors de l\'extraction des restaurants.');
-    }
-
-    final allRestaurants = await getAllRestaurant();
-    if (allRestaurants.isNotEmpty) {
-      print('Restaurants récupérés avec succès :');
-      for (var restaurant in allRestaurants) {
-        print(restaurant);
-      }
-    } else {
-      print('Aucun restaurant trouvé.');
-    }
-
-    print('Fin des tests de la base de données.');
-  }
-
   Future<void> initialiserEtRemplirTables(String chemin) async {
+    print('Initialisation des tables...');
     final prefs = await SharedPreferences.getInstance();
     final isInitialized = prefs.getBool('tables_initialized') ?? false;
 
@@ -145,8 +187,8 @@ class SupabaseHelper {
 
         // 1. Initialisation de la table Restaurant
         for (var restaurant in restaurants) {
-          await supabase.from('restaurant').insert({
-            'nom': restaurant['name'],
+          await supabase.from(tableRestaurant).insert({
+            columnNom: restaurant['name'],
             'type': restaurant['type'],
             'adresse': '${restaurant['com_nom']}, ${restaurant['commune']}',
             'telephone': restaurant['phone'] ?? 'Non renseigné',
@@ -175,6 +217,23 @@ class SupabaseHelper {
       print('Tables déjà initialisées.');
     }
   }
+  Future<Map<String, dynamic>?> getRestaurantById(int id) async {
+  print('Récupération du restaurant avec l\'id $id...');
+  final response = await supabase
+      .from(tableRestaurant)
+      .select()
+      .eq(columnId, id)
+      .single();
+
+  try {
+    if (response == null || response.isEmpty) {
+      throw Exception('Aucune donnée trouvée.');
+    }
+  } catch (e) {
+    print('Erreur Supabase: $e');
+    throw e;
+  }
+  return response as Map<String, dynamic>?;
 }
 
 extension on PostgrestMap {
@@ -224,3 +283,5 @@ String sampleJson = '''
 ]
 
 ''';
+
+}

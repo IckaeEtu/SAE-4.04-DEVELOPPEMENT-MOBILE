@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/auth/screens/connexionInscription.dart';
+import 'package:sae_mobile/features/restaurants/screens/RestaurantDetailScreen.dart';
 import '../features/HomePage.dart';
 
 final GoRouter router = GoRouter(
@@ -28,6 +29,18 @@ final GoRouter router = GoRouter(
     GoRoute(
       path: '/home',
       builder: (BuildContext context, GoRouterState state) => HomePage(),
+    ),
+    GoRoute(
+      path: '/restaurant/:id', 
+      builder: (context, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        if (id == null) {
+          return const Scaffold(
+            body: Center(child: Text('ID de restaurant invalide.')),
+          );
+        }
+        return RestaurantDetailScreen(restaurantId: id);
+      },
     ),
   ],
 );
