@@ -10,7 +10,7 @@ final GoRouter routeur = GoRouter(
       builder: (context, state) => HomePage(),
     ),
     GoRoute(
-      path: '/restaurant/:id',
+      path: '/restaurant/:id', 
       builder: (context, state) {
         final id = int.tryParse(state.pathParameters['id'] ?? '');
         if (id == null) {

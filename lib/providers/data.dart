@@ -217,4 +217,23 @@ class SupabaseHelper {
       print('Tables déjà initialisées.');
     }
   }
+  Future<Map<String, dynamic>?> getRestaurantById(int id) async {
+  print('Récupération du restaurant avec l\'id $id...');
+  final response = await supabase
+      .from(tableRestaurant)
+      .select()
+      .eq(columnId, id)
+      .single();
+
+  try {
+    if (response == null || response.isEmpty) {
+      throw Exception('Aucune donnée trouvée.');
+    }
+  } catch (e) {
+    print('Erreur Supabase: $e');
+    throw e;
+  }
+  return response as Map<String, dynamic>?;
+}
+
 }
