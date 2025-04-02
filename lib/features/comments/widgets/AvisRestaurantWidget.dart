@@ -1,10 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as path;
-import 'dart:io';
-import 'package:image/image.dart' as img;
+import 'package:flutter/material.dart' as material;
 
 class AvisRestaurantWidget extends StatefulWidget {
   final int restaurantId;
@@ -27,6 +27,7 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
   String newCommentaire = '';
   String? newImageUrl;
   final dbHelper = SupabaseHelper();
+  XFile? _pickedImage;
 
   @override
   void initState() {
@@ -43,7 +44,8 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
       print("avisList: $avisList");
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors du chargement des avis: $e')),
+        SnackBar(
+            content: material.Text('Erreur lors du chargement des avis: $e')),
       );
     } finally {
       setState(() {
@@ -55,21 +57,20 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
   Future<void> _deleteAvis(int avisId) async {
     try {
       await dbHelper.deleteAvis(avisId);
-      _loadAvis();
+      await _loadAvis(); // Ajout de l'appel à _loadAvis()
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la suppression de l\'avis: $e')),
+        SnackBar(
+            content:
+                material.Text('Erreur lors de la suppression de l\'avis: $e')),
       );
     }
   }
 
   Future<void> _addAvis() async {
     if (widget.userId != null) {
-      String? imageUrl;
-      if (newImageUrl != null) {
-        print('Image sélectionnée: $newImageUrl');
-        imageUrl = await _uploadImage(File(newImageUrl!));
-      }
+      String? imageUrl = await _uploadImage();
+
       try {
         await dbHelper.addAvis(
           widget.restaurantId,
@@ -83,100 +84,53 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
           newCommentaire = '';
           newNote = 1;
           newImageUrl = null;
+          _pickedImage = null;
         });
+        Navigator.of(context).pop(); // Close dialog after successful post.
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: material.Text('Avis posté avec succès!')),
+        );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur lors de l\'ajout de l\'avis : $e')),
+          SnackBar(
+              content:
+                  material.Text('Erreur lors de l\'ajout de l\'avis : $e')),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Vous devez être connecté pour laisser un avis.'),
-        ),
+            content: material.Text(
+                'Vous devez être connecté pour laisser un avis.')),
       );
     }
   }
 
-  Future<String?> _uploadImage(File image) async {
+  Future<String?> _uploadImage() async {
+    if (_pickedImage == null) return null;
+
+    final imageBytes = await _pickedImage!.readAsBytes();
+
+    final storagePath =
+        'images/${DateTime.now().millisecondsSinceEpoch}${path.extension(_pickedImage!.path)}';
+
     try {
-      print('Chemin de l\'image : ${image.path}');
-      final fileName = path.basename(image.path);
-      print('Nom du fichier : $fileName');
-      final filePath = 'image/$fileName';
-      print('Chemin du fichier sur Supabase : $filePath');
-      final response = await Supabase.instance.client.storage
-          .from('images')
-          .upload(filePath, image);
-      try {
-        if (response == null || response.isEmpty) {
-          throw Exception('Aucune donnée trouvée.');
-        }
-      } catch (e) {
-        print('Erreur Supabase: $e');
-        throw e;
-      }
-      final imageUrl = Supabase.instance.client.storage
-          .from('images')
-          .getPublicUrl(filePath);
-      print('URL de l\'image : $imageUrl');
+      await supabase.storage.from("images").uploadBinary(
+            storagePath,
+            imageBytes,
+            fileOptions: FileOptions(
+              contentType: _pickedImage!.mimeType,
+              upsert: true,
+            ),
+          );
+
+      final imageUrl =
+          supabase.storage.from("images").getPublicUrl(storagePath);
       return imageUrl;
     } catch (e) {
       print('Erreur lors de l\'upload de l\'image : $e');
       return null;
     }
-  }
-
-  Future<void> _pickImage() async {
-    final pickedFile =
-        await ImagePicker().pickImage(source: ImageSource.gallery);
-
-    if (pickedFile != null) {
-      final extension = path.extension(pickedFile.path).toLowerCase();
-      if (extension == '.jpg' || extension == '.png' || extension == '.jpeg') {
-        final file = File(pickedFile.path);
-        final sizeInBytes = await file.length();
-        final sizeInKB = sizeInBytes / 1024;
-
-        if (sizeInKB > 0 && sizeInKB <= 1024) {
-          final bytes = await file.readAsBytes();
-          final image = img.decodeImage(bytes);
-
-          if (image != null && image.width > 100 && image.height > 100) {
-            // L'image est valide
-            // ...
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Dimensions de l\'image non valides.')),
-            );
-          }
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Taille du fichier non valide.')),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fichier non valide.')),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Aucune image sélectionnée.')),
-      );
-    }
-  }
-
-  void _showAddAvisDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('Laisser un avis'),
-          content: SingleChildScrollView(child: _buildAvisForm()),
-        );
-      },
-    );
   }
 
   @override
@@ -194,12 +148,10 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Critiques:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
+            material.Text('Critiques:',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             if (avisList.isEmpty)
-              Text('Aucun avis trouvé.')
+              material.Text('Aucun avis trouvé.')
             else
               ListView.builder(
                 shrinkWrap: true,
@@ -216,38 +168,51 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
     );
   }
 
+  Future<void> _showAddAvisDialog(BuildContext context) async {
+    return showDialog<void>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: material.Text('Ajouter un avis'),
+          content: SingleChildScrollView(
+            child: _buildAvisForm(),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: material.Text('Annuler'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildAvisItem(Map<String, dynamic> avis) {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       padding: EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
-        borderRadius: BorderRadius.circular(8),
-      ),
+          color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            DateTime.parse(avis['date_creation']).toString(),
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+          material.Text(DateTime.parse(avis['date_creation']).toString(),
+              style: TextStyle(fontWeight: FontWeight.bold)),
           if (avis['img'] != null)
-            Image.network(
-              avis['img'],
-              width: 200,
-              height: 200,
-              fit: BoxFit.cover,
-            ),
-          Text(avis['commentaire'] ?? ''),
-          Text(
-            'Note : ${avis['note']}/5',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
+            Image.network(avis['img'],
+                width: 200, height: 200, fit: BoxFit.cover),
+          material.Text(avis['commentaire'] ?? ''),
+          material.Text('Note: ${avis['note']}/5',
+              style: TextStyle(fontWeight: FontWeight.bold)),
           if (widget.userId == avis['id_utilisateur'])
             ElevatedButton(
-              onPressed: () => _deleteAvis(avis['id']),
-              child: Text('Supprimer cet avis'),
-            ),
+                onPressed: () async {
+                  await _deleteAvis(avis['id']);
+                },
+                child: material.Text('Supprimer cet avis')),
         ],
       ),
     );
@@ -257,16 +222,12 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Note:'),
+        material.Text('Note:'),
         DropdownButton<int>(
           value: newNote,
           items: List.generate(5, (index) => index + 1)
-              .map(
-                (value) => DropdownMenuItem(
-                  value: value,
-                  child: Text(value.toString()),
-                ),
-              )
+              .map((value) => DropdownMenuItem(
+                  value: value, child: material.Text(value.toString())))
               .toList(),
           onChanged: (value) {
             if (value != null) {
@@ -276,16 +237,31 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
             }
           },
         ),
-        Text('Commentaire:'),
+        material.Text('Commentaire:'),
         TextFormField(
           onChanged: (value) => newCommentaire = value,
           decoration: InputDecoration(border: OutlineInputBorder()),
           maxLines: 3,
         ),
-        ElevatedButton(onPressed: _pickImage, child: Text('Choisir une image')),
-        if (newImageUrl != null)
-          Text('Image sélectionnée: ${newImageUrl!.split('/').last}'),
-        ElevatedButton(onPressed: _addAvis, child: Text('Envoyer')),
+        ElevatedButton(
+          onPressed: () async {
+            final image = await ImagePicker().pickImage(
+                source: ImageSource.gallery, maxWidth: 1980, maxHeight: 1980);
+            if (image != null) {
+              setState(() {
+                _pickedImage = image;
+              });
+            }
+          },
+          child: material.Text('Choisir une image'),
+        ),
+        if (_pickedImage != null)
+          Column(children: [
+            Image.file(File(_pickedImage!.path),
+                key: ValueKey(_pickedImage!.path), height: 100, width: 100),
+            material.Text('Image sélectionnée: ${_pickedImage!.name}'),
+          ]),
+        ElevatedButton(onPressed: _addAvis, child: material.Text('Envoyer')),
       ],
     );
   }
