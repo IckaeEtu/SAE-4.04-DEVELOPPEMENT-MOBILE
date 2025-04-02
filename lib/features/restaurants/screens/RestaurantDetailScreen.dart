@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sae_mobile/core/models/Restaurant.dart';
+import 'package:sae_mobile/features/Favoris/FavorisProvider.dart';
 import 'package:sae_mobile/features/restaurants/providers/RestaurantProvider.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; 
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart'; 
 
 class RestaurantDetailScreen extends StatefulWidget {
   final int restaurantId;
@@ -62,12 +64,33 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 
   Widget _buildRestaurantDetails(Restaurant restaurant) {
+    final favorisProvider = Provider.of<FavorisProvider>(context);
+    final isFavorite = favorisProvider.isFavorite(restaurant.id!); // Vérifie si le restaurant est favori
+
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(restaurant.nom, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(restaurant.nom, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+              IconButton(
+                icon: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: Colors.red,
+                ),
+                onPressed: () {
+                  if (isFavorite) {
+                    favorisProvider.removeFavorite(restaurant.id!);
+                  } else {
+                    favorisProvider.addFavorite(restaurant);
+                  }
+                },
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
           Row(
             children: [

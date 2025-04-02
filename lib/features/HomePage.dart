@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:provider/provider.dart'; // Import Provider
+import 'package:sae_mobile/features/Favoris/FavorisProvider.dart'; // Import FavoritesProvider
+import 'package:sae_mobile/core/models/Restaurant.dart'; // Import Restaurant model
 
 final supabase = Supabase.instance.client;
 
@@ -83,17 +86,17 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Où manger aujourd'hui ?", 
+          Text("Où manger aujourd'hui ?",
               style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepOrangeAccent)),
           SizedBox(height: 10),
-          Text("Les meilleurs restaurants :", 
+          Text("Les meilleurs restaurants :",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           topRestaurants.isEmpty
               ? Text("Aucun restaurant disponible.", style: TextStyle(fontSize: 16, color: Colors.black54))
               : Column(
                   children: topRestaurants
                       .map((restaurant) => ListTile(
-                            title: Text(restaurant['nom'], 
+                            title: Text(restaurant['nom'],
                                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                             subtitle: Text(restaurant['adresse']),
                             onTap: () => context.go('/restaurant/${restaurant['id']}'),
@@ -143,6 +146,45 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildFavorisContent() {
+    final favorisProvider = Provider.of<FavorisProvider>(context);
+    final favoriteRestaurants = favorisProvider.favoriteRestaurants;
+
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Mes Restaurants Favoris", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          SizedBox(height: 20),
+          Expanded(
+            child: favoriteRestaurants.isEmpty
+                ? Center(child: Text("Vous n'avez pas encore de restaurants favoris.", style: TextStyle(fontSize: 16, color: Colors.black87)))
+                : ListView.builder(
+                    itemCount: favoriteRestaurants.length,
+                    itemBuilder: (context, index) {
+                      final restaurant = favoriteRestaurants[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(restaurant.nom, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          subtitle: Text(restaurant.adresse),
+                          trailing: IconButton(
+                            icon: Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              favorisProvider.removeFavorite(restaurant.id!);
+                            },
+                          ),
+                          onTap: () => context.go('/restaurant/${restaurant.id}'),
+                        ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -178,12 +220,16 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-      body: _selectedIndex == 0 ? _buildHomeContent() : _buildSearchContent(),
+      body: _selectedIndex == 0
+          ? _buildHomeContent()
+          : _selectedIndex == 1
+              ? _buildSearchContent()
+              : _buildFavorisContent(), // Affiche les favoris
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Recherche'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profil'),
+          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favoris'), // Change Profil en Favoris
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.orangeAccent,
