@@ -13,6 +13,10 @@ class AuthPage extends StatefulWidget {
 class _AuthPageState extends State<AuthPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _nomController = TextEditingController();
+  final TextEditingController _prenomController = TextEditingController();
+  final TextEditingController _telephoneController = TextEditingController();
+
   bool _isLogin = true;
   bool _loading = false;
   String? _errorMessage;
@@ -31,30 +35,59 @@ class _AuthPageState extends State<AuthPage> {
         throw 'Veuillez remplir tous les champs.';
       }
 
-      AuthResponse response;
       if (_isLogin) {
-        response = await supabase.auth.signInWithPassword(
-          email: email,
-          password: password,
-        );
-      } else {
-        response = await supabase.auth.signUp(
-          email: email,
-          password: password,
-        );
-      }
+        // Connexion : Vérifier si l'utilisateur existe avec cet email et mot de passe
+        final response = await supabase
+            .from('utilisateur')
+            .select()
+            .eq('email', email)
+            .eq('mot_de_passe', password)
+            .single();
 
-      final user = response.user;
-      if (user != null) {
+        if (response == null) {
+          throw 'Identifiants incorrects.';
+        }
+
+        // Stocker l'ID utilisateur en local
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('user_id', user.id);
-        
-        // CORRECTION ICI : Suppression du onPressed: inutile
-        if (mounted) {  // Vérifie que le widget est toujours dans l'arbre
-          context.go('/home');  // Navigation directe
+        await prefs.setInt('user_id', response['id']);
+
+        if (mounted) {
+          context.go('/home');
         }
       } else {
-        throw 'Échec de la connexion. Vérifiez vos informations.';
+        // Inscription : Vérifier si l'email existe déjà
+        final existingUser = await supabase
+            .from('utilisateur')
+            .select()
+            .eq('email', email)
+            .maybeSingle();
+
+        if (existingUser != null) {
+          throw 'Cet email est déjà utilisé.';
+        }
+
+        // Insérer le nouvel utilisateur
+        final nom = _nomController.text.trim();
+        final prenom = _prenomController.text.trim();
+        final telephone = _telephoneController.text.trim();
+
+        final response = await supabase.from('utilisateur').insert({
+          'email': email,
+          'mot_de_passe': password, // ⚠️ Idéalement, stocker un hash sécurisé
+          'nom': nom,
+          'prenom': prenom,
+          'telephone': telephone,
+          'role': 'utilisateur', // Rôle par défaut
+        }).select().single();
+
+        // Stocker l'ID utilisateur
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('user_id', response['id']);
+
+        if (mounted) {
+          context.go('/home');
+        }
       }
     } catch (error) {
       setState(() {
@@ -63,30 +96,6 @@ class _AuthPageState extends State<AuthPage> {
     } finally {
       setState(() {
         _loading = false;
-      });
-    }
-  }
-
-  Future<void> _resetPassword() async {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      setState(() {
-        _errorMessage = 'Veuillez entrer votre email pour réinitialiser votre mot de passe.';
-      });
-      return;
-    }
-
-    try {
-      await supabase.auth.resetPasswordForEmail(email);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Email de réinitialisation envoyé. Vérifiez votre boîte mail.'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (error) {
-      setState(() {
-        _errorMessage = 'Erreur : Impossible d\'envoyer l\'email de réinitialisation.';
       });
     }
   }
@@ -126,17 +135,36 @@ class _AuthPageState extends State<AuthPage> {
                   ),
                   obscureText: true,
                 ),
-                if (_isLogin)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: _resetPassword,
-                      child: Text(
-                        'Mot de passe oublié ?',
-                        style: TextStyle(color: Colors.blue, fontSize: 14),
-                      ),
+                if (!_isLogin) ...[
+                  SizedBox(height: 16),
+                  TextField(
+                    controller: _nomController,
+                    decoration: InputDecoration(
+                      labelText: 'Nom',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person),
                     ),
                   ),
+                  SizedBox(height: 16),
+                  TextField(
+                    controller: _prenomController,
+                    decoration: InputDecoration(
+                      labelText: 'Prénom',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person_outline),
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  TextField(
+                    controller: _telephoneController,
+                    decoration: InputDecoration(
+                      labelText: 'Téléphone',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone),
+                    ),
+                    keyboardType: TextInputType.phone,
+                  ),
+                ],
                 SizedBox(height: 16),
                 if (_errorMessage != null)
                   Padding(
