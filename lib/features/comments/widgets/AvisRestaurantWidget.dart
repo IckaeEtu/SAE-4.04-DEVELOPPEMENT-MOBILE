@@ -218,51 +218,61 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
     );
   }
 
-  Widget _buildAvisForm() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        material.Text('Note:'),
-        DropdownButton<int>(
-          value: newNote,
-          items: List.generate(5, (index) => index + 1)
-              .map((value) => DropdownMenuItem(
-                  value: value, child: material.Text(value.toString())))
-              .toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                newNote = value;
-              });
-            }
-          },
-        ),
-        material.Text('Commentaire:'),
-        TextFormField(
-          onChanged: (value) => newCommentaire = value,
-          decoration: InputDecoration(border: OutlineInputBorder()),
-          maxLines: 3,
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            final image = await ImagePicker().pickImage(
-                source: ImageSource.gallery, maxWidth: 1980, maxHeight: 1980);
-            if (image != null) {
-              setState(() {
-                _pickedImage = image;
-              });
-            }
-          },
-          child: material.Text('Choisir une image'),
-        ),
-        if (_pickedImage != null)
-          Column(children: [
-            Image.file(File(_pickedImage!.path),
-                key: ValueKey(_pickedImage!.path), height: 100, width: 100),
-            material.Text('Image sélectionnée: ${_pickedImage!.name}'),
-          ]),
-        ElevatedButton(onPressed: _addAvis, child: material.Text('Envoyer')),
-      ],
-    );
-  }
+Widget _buildAvisForm() {
+  return StatefulBuilder( // Utilisation de StatefulBuilder pour le formulaire entier
+    builder: (BuildContext context, StateSetter formSetState) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          material.Text('Note:'),
+          StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return DropdownButton<int>(
+                value: newNote,
+                items: List.generate(5, (index) => index + 1)
+                    .map((value) => DropdownMenuItem(
+                          value: value,
+                          child: material.Text(value.toString()),
+                        ))
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    setState(() {
+                      newNote = value;
+                    });
+                  }
+                },
+              );
+            },
+          ),
+          material.Text('Commentaire:'),
+          TextFormField(
+            onChanged: (value) => newCommentaire = value,
+            decoration: InputDecoration(border: OutlineInputBorder()),
+            maxLines: 3,
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final image = await ImagePicker().pickImage(
+                  source: ImageSource.gallery, maxWidth: 1980, maxHeight: 1980);
+              if (image != null) {
+                formSetState(() { // Utilisation de formSetState
+                  _pickedImage = image;
+                });
+              }
+            },
+            child: material.Text('Choisir une image'),
+          ),
+          if (_pickedImage != null) // Affichage du message
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Text('Image sélectionnée: ${_pickedImage!.name}'),
+            ),
+          ElevatedButton(onPressed: _addAvis, child: material.Text('Envoyer')),
+        ],
+      );
+    },
+  );
+}
+
 }
