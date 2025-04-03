@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sae_mobile/core/models/Restaurant.dart';
 import 'package:sae_mobile/features/Favoris/FavorisProvider.dart';
-import 'package:sae_mobile/features/restaurants/providers/RestaurantProvider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart'; 
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart'; // Import GoRouter
 
 class RestaurantDetailScreen extends StatefulWidget {
   final int restaurantId;
@@ -27,17 +27,16 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   Future<Restaurant?> _fetchRestaurantDetails() async {
     try {
-      print('Fetching restaurant with ID: ${widget.restaurantId}');
-      final result =
-          await _supabaseClient.from('restaurant').select().eq('id', widget.restaurantId);
-      print('Query result: $result');
+      final result = await _supabaseClient
+          .from('restaurant')
+          .select()
+          .eq('id', widget.restaurantId);
       if (result != null && result.isNotEmpty) {
-        final restaurant = Restaurant.fromMap((result as List).first);
-        return restaurant;
+        return Restaurant.fromMap((result as List).first);
       }
       return null;
     } catch (e) {
-      print("Error fetching restaurant details: $e");
+      print("Erreur lors de la récupération du restaurant : $e");
       return null;
     }
   }
@@ -45,27 +44,42 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Détails du restaurant')),
-      body: FutureBuilder<Restaurant?>(
-        future: _restaurantFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Erreur : ${snapshot.error}'));
-          } else if (snapshot.hasData && snapshot.data != null) {
-            return _buildRestaurantDetails(snapshot.data!);
-          } else {
-            return const Center(child: Text('Restaurant introuvable'));
-          }
+      appBar: AppBar(
+        title: const Text('Détails du restaurant'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () {
+            context.go('/home'); // Retourne directement à la page d'accueil avec GoRouter
+          },
+        ),
+      ),
+      body: WillPopScope(
+        onWillPop: () async {
+          // Ici, vous pouvez ajouter du code avant de revenir en arrière
+          context.go('/home'); // Pour s'assurer que le retour se fait vers la page d'accueil
+          return false; // empêche la fermeture de la page actuelle
         },
+        child: FutureBuilder<Restaurant?>(
+          future: _restaurantFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Erreur : ${snapshot.error}'));
+            } else if (snapshot.hasData && snapshot.data != null) {
+              return _buildRestaurantDetails(snapshot.data!);
+            } else {
+              return const Center(child: Text('Restaurant introuvable'));
+            }
+          },
+        ),
       ),
     );
   }
 
   Widget _buildRestaurantDetails(Restaurant restaurant) {
     final favorisProvider = Provider.of<FavorisProvider>(context);
-    final isFavorite = favorisProvider.isFavorite(restaurant.id!); // Vérifie si le restaurant est favori
+    final isFavorite = favorisProvider.isFavorite(restaurant.id!);
 
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -75,7 +89,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(restaurant.nom, style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blueGrey)),
+              Expanded(
+                child: Text(restaurant.nom,
+                    style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueGrey),
+                    overflow: TextOverflow.ellipsis),
+              ),
               IconButton(
                 icon: Icon(
                   isFavorite ? Icons.favorite : Icons.favorite_border,
@@ -96,7 +117,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             children: [
               const Icon(Icons.location_on, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
-              Expanded(child: Text(restaurant.adresse, style: const TextStyle(fontSize: 16))),
+              Expanded(
+                  child: Text(restaurant.adresse,
+                      style: const TextStyle(fontSize: 16))),
             ],
           ),
           const Divider(),
@@ -104,12 +127,17 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             children: [
               const Icon(Icons.category, size: 16, color: Colors.grey),
               const SizedBox(width: 4),
-              Text('Type: ${restaurant.type}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+              Text('Type: ${restaurant.type}',
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.w500)),
             ],
           ),
           const Divider(),
-          Text('Description:', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-          Text(restaurant.description ?? 'N/A', style: const TextStyle(fontSize: 16)),
+          Text('Description:',
+              style:
+                  const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          Text(restaurant.description ?? 'N/A',
+              style: const TextStyle(fontSize: 16)),
         ],
       ),
     );
