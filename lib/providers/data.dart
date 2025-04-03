@@ -97,15 +97,17 @@ class SupabaseHelper {
 
   Future<int> deleteAvis(int avisId) async {
     print('Suppression de l\'avis $avisId...');
-    final response =
+    try {
+      final response =
         await supabase.from(tableCritique).delete().eq(columnId, avisId);
-
-    if (response.error != null) {
-      print('Erreur Supabase: ${response.error}');
-      throw response.error!;
+        print('Avis $avisId supprimé.');
+        return 0;
     }
-    print('Avis $avisId supprimé.');
-    return response.count ?? 0;
+    catch (e) {
+      print('Erreur Supabase: $e');
+      return 0;
+    }
+  
   }
 
   Future<List<Map<String, dynamic>>> getAllRestaurant() async {
