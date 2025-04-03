@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:sae_mobile/features/auth/screens/connexionInscription.dart';
+import '../features/auth/screens/connexionInscription.dart';
 import 'package:sae_mobile/features/restaurants/screens/RestaurantDetailScreen.dart';
-import 'package:sae_mobile/features/HomePage.dart';
+import '../features/HomePage.dart';
 import 'package:sae_mobile/features/admin/screens/adminPage.dart';
 
 final GoRouter router = GoRouter(
@@ -11,6 +11,7 @@ final GoRouter router = GoRouter(
     final session = Supabase.instance.client.auth.currentSession;
     final isAuthenticated = session != null;
 
+    // Utilisez state.uri.path au lieu de state.location
     if (state.uri.path == '/' && isAuthenticated) {
       return '/home';
     }
@@ -23,7 +24,7 @@ final GoRouter router = GoRouter(
   },
   routes: <GoRoute>[
     GoRoute(
-      path: '/',
+      path: '/home',
       builder: (BuildContext context, GoRouterState state) => AuthPage(),
     ),
     GoRoute(
@@ -31,12 +32,12 @@ final GoRouter router = GoRouter(
       builder: (BuildContext context, GoRouterState state) => AuthPage(),
     ),
     GoRoute(
-      path: '/home',
-      builder: (BuildContext context, GoRouterState state) => HomePage(),
-    ),
-    GoRoute(
       path: '/admin',
       builder: (BuildContext context, GoRouterState state) => AdminPage(),
+    ),
+    GoRoute(
+      path: '/',
+      builder: (BuildContext context, GoRouterState state) => HomePage(),
     ),
     GoRoute(
       path: '/restaurant/:id', 

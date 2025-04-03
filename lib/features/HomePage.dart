@@ -31,27 +31,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> _fetchUserRole() async {
-    final user = supabase.auth.currentUser;
-    print(user);
-    if (user == null) return;
-
-    final response = await supabase
-        .from('utilisateur')
-        .select('role')
-        .eq('email', user.email!)
-        .maybeSingle();
-
-    setState(() {
-      _userRole = response?['role'];
-    });
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _userRole = prefs.getString('role');
   }
 
   void _navigateToAdmin() async {
     await _fetchUserRole();
+    print(_userRole == 'admin');
 
     if (_userRole == 'admin') {
       context.go('/admin');
     } else {
+      print('test');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Accès refusé. Vous n\'êtes pas administrateur.'),
@@ -60,7 +51,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
-
 
   Future<void> fetchTopRestaurants() async {
     try {
@@ -122,10 +112,10 @@ class _HomePageState extends State<HomePage> {
 
   void _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user_id');
+    await prefs.clear();
     await supabase.auth.signOut();
     if (mounted) {
-      context.go('/auth');
+      context.go('/logout');
     }
   }
 
