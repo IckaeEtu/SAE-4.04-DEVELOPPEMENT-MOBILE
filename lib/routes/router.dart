@@ -27,6 +27,10 @@ final GoRouter router = GoRouter(
       builder: (BuildContext context, GoRouterState state) => AuthPage(),
     ),
     GoRoute(
+      path: '/logout',
+      builder: (BuildContext context, GoRouterState state) => AuthPage(),
+    ),
+    GoRoute(
       path: '/home',
       builder: (BuildContext context, GoRouterState state) => HomePage(),
     ),
