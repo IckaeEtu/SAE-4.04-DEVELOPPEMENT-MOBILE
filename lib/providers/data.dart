@@ -219,4 +219,31 @@ class SupabaseHelper {
       print('Tables déjà initialisées.');
     }
   }
+
+  Future<List<String?>> getRestaurantCommentImages(int restaurantId) async {
+    print('Récupération des images des commentaires pour le restaurant $restaurantId...');
+    try {
+      final response = await supabase
+          .from(SupabaseHelper.tableCritique)
+          .select('img') // Sélectionne uniquement la colonne 'img'
+          .eq(SupabaseHelper.columnIdRestaurant, restaurantId)
+          .not('img', 'is', null); // Exclut les lignes où 'img' est null
+
+      if (response == null || response.isEmpty) {
+        print('Aucune image trouvée pour le restaurant $restaurantId.');
+        return [];
+      }
+
+      // Extrait les URLs des images de la réponse
+      List<String?> imageUrls = (response as List<dynamic>)
+          .map((item) => (item as Map<String, dynamic>)['img'] as String?)
+          .toList();
+
+      print('Images des commentaires du restaurant $restaurantId: $imageUrls');
+      return imageUrls;
+    } catch (e) {
+      print('Erreur Supabase lors de la récupération des images des commentaires: $e');
+      return []; // Retourne une liste vide en cas d'erreur
+    }
+  }
 }
