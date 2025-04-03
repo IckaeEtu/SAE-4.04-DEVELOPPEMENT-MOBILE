@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'routes/router.dart'; // Assurez-vous que le chemin est correct
 import 'package:sae_mobile/features/HomePage.dart';
 import 'package:sae_mobile/providers/data.dart';
 import 'package:sae_mobile/routes/router.dart';

@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart'; // Import Provider
 import 'package:sae_mobile/features/Favoris/FavorisProvider.dart'; // Import FavoritesProvider
 import 'package:sae_mobile/core/models/Restaurant.dart'; // Import Restaurant model
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
 
 final supabase = Supabase.instance.client;
 
@@ -21,12 +22,45 @@ class _HomePageState extends State<HomePage> {
   GoogleMapController? mapController;
   LatLng _currentPosition = LatLng(48.8566, 2.3522);
   final Set<Marker> _markers = {};
+  String? _userRole;
 
   @override
   void initState() {
     super.initState();
     fetchTopRestaurants();
   }
+
+  Future<void> _fetchUserRole() async {
+    final user = supabase.auth.currentUser;
+    print(user);
+    if (user == null) return;
+
+    final response = await supabase
+        .from('utilisateur')
+        .select('role')
+        .eq('email', user.email!)
+        .maybeSingle();
+
+    setState(() {
+      _userRole = response?['role'];
+    });
+  }
+
+  void _navigateToAdmin() async {
+    await _fetchUserRole();
+
+    if (_userRole == 'admin') {
+      context.go('/admin');
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Accès refusé. Vous n\'êtes pas administrateur.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
 
   Future<void> fetchTopRestaurants() async {
     try {
@@ -85,6 +119,16 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
+
+  void _logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('user_id');
+    await supabase.auth.signOut();
+    if (mounted) {
+      context.go('/auth');
+    }
+  }
+
 
   Widget _buildHomeContent() {
     return Padding(
@@ -252,12 +296,12 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading: Icon(Icons.admin_panel_settings),
               title: Text("Admin"),
-              onTap: () => context.go('/admin'),
+              onTap: () => _navigateToAdmin(),
             ),
             ListTile(
               leading: Icon(Icons.logout),
               title: Text("Se déconnecter"),
-              onTap: () => context.go('/logout'),
+              onTap: () => _logout(),
             ),
           ],
         ),

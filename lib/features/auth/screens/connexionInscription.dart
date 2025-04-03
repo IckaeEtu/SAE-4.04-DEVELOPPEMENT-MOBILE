@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -21,6 +20,7 @@ class _AuthPageState extends State<AuthPage> {
   bool _loading = false;
   String? _errorMessage;
 
+  // Méthode pour se connecter ou s'inscrire
   Future<void> _authenticate() async {
     setState(() {
       _loading = true;
@@ -36,7 +36,7 @@ class _AuthPageState extends State<AuthPage> {
       }
 
       if (_isLogin) {
-        // Connexion : Vérifier si l'utilisateur existe avec cet email et mot de passe
+        // Connexion
         final response = await supabase
             .from('utilisateur')
             .select()
@@ -48,15 +48,13 @@ class _AuthPageState extends State<AuthPage> {
           throw 'Identifiants incorrects.';
         }
 
-        // Stocker l'ID utilisateur en local
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('user_id', response['id']);
-
+        // Rediriger vers la page d'accueil
         if (mounted) {
+          print('devrait marcher');
           context.go('/home');
         }
       } else {
-        // Inscription : Vérifier si l'email existe déjà
+        // Inscription
         final existingUser = await supabase
             .from('utilisateur')
             .select()
@@ -81,10 +79,7 @@ class _AuthPageState extends State<AuthPage> {
           'role': 'utilisateur', // Rôle par défaut
         }).select().single();
 
-        // Stocker l'ID utilisateur
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setInt('user_id', response['id']);
-
+        // Rediriger vers la page d'accueil
         if (mounted) {
           context.go('/home');
         }
