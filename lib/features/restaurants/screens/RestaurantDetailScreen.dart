@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:sae_mobile/core/models/Restaurant.dart';
 import 'package:sae_mobile/features/Favoris/FavorisProvider.dart';
+import 'package:sae_mobile/features/comments/widgets/AvisRestaurantWidget.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
-import 'package:go_router/go_router.dart'; // Import GoRouter
-
+import 'package:go_router/go_router.dart';
 class RestaurantDetailScreen extends StatefulWidget {
   final int restaurantId;
 
@@ -49,15 +49,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         leading: IconButton(
           icon: Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () {
-            context.go('/home'); // Retourne directement à la page d'accueil avec GoRouter
+            context.go('/home');
           },
         ),
       ),
       body: WillPopScope(
         onWillPop: () async {
-          // Ici, vous pouvez ajouter du code avant de revenir en arrière
-          context.go('/home'); // Pour s'assurer que le retour se fait vers la page d'accueil
-          return false; // empêche la fermeture de la page actuelle
+          context.go('/home');
+          return false;
         },
         child: FutureBuilder<Restaurant?>(
           future: _restaurantFuture,
@@ -138,6 +137,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                   const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
           Text(restaurant.description ?? 'N/A',
               style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 20),
+          // Ajout du widget AvisRestaurantWidget
+          AvisRestaurantWidget(restaurantId: restaurant.id!),
         ],
       ),
     );
