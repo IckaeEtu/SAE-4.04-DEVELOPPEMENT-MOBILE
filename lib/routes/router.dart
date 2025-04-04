@@ -8,8 +8,10 @@ import '../features/HomePage.dart';
 final GoRouter router = GoRouter(
   redirect: (BuildContext context, GoRouterState state) {
     final session = Supabase.instance.client.auth.currentSession;
-    final isAuthenticated = session != null;
+    //final isAuthenticated = session != null;
+    final isAuthenticated = true;
 
+    
     // Utilisez state.uri.path au lieu de state.location
     if (state.uri.path == '/' && isAuthenticated) {
       return '/home';

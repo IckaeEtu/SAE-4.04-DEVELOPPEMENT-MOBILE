@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'routes/router.dart'; // Assurez-vous que le chemin est correct
-import 'package:sae_mobile/features/HomePage.dart';
-import 'package:sae_mobile/providers/data.dart';
-import 'package:sae_mobile/routes/router.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart'; // Import Provider
-import 'package:sae_mobile/features/Favoris/FavorisProvider.dart'; // Import FavoritesProvider
+import 'routes/router.dart';
+import 'package:provider/provider.dart';
+import 'package:sae_mobile/features/Favoris/FavorisProvider.dart';
+import 'package:sae_mobile/features/restaurants/providers/RestaurantProvider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,9 +13,11 @@ void main() async {
   );
 
   runApp(
-    // Enveloppe MyApp avec ChangeNotifierProvider
-    ChangeNotifierProvider(
-      create: (context) => FavorisProvider(),
+    MultiProvider( // Utilisez MultiProvider ici
+      providers: [
+        ChangeNotifierProvider(create: (context) => FavorisProvider()),
+        ChangeNotifierProvider(create: (context) => RestaurantProvider()),
+      ],
       child: const MyApp(),
     ),
   );
@@ -36,7 +35,7 @@ class MyApp extends StatelessWidget {
         primarySwatch: Colors.blue,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      routerConfig: router, // Utilisez la variable router que vous avez définie
+      routerConfig: router,
     );
   }
 }

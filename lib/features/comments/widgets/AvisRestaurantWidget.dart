@@ -44,8 +44,7 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
       print("avisList: $avisList");
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: material.Text('Erreur lors du chargement des avis: $e')),
+        SnackBar(content: material.Text('Erreur lors du chargement des avis: $e')),
       );
     } finally {
       setState(() {
@@ -57,12 +56,10 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
   Future<void> _deleteAvis(int avisId) async {
     try {
       await dbHelper.deleteAvis(avisId);
-      await _loadAvis(); // Ajout de l'appel à _loadAvis()
+      await _loadAvis();
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                material.Text('Erreur lors de la suppression de l\'avis: $e')),
+        SnackBar(content: material.Text('Erreur lors de la suppression de l\'avis: $e')),
       );
     }
   }
@@ -86,22 +83,18 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
           newImageUrl = null;
           _pickedImage = null;
         });
-        Navigator.of(context).pop(); // Close dialog after successful post.
+        Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: material.Text('Avis posté avec succès!')),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content:
-                  material.Text('Erreur lors de l\'ajout de l\'avis : $e')),
+          SnackBar(content: material.Text('Erreur lors de l\'ajout de l\'avis : $e')),
         );
       }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: material.Text(
-                'Vous devez être connecté pour laisser un avis.')),
+        SnackBar(content: material.Text('Vous devez être connecté pour laisser un avis.')),
       );
     }
   }
@@ -124,8 +117,7 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
             ),
           );
 
-      final imageUrl =
-          supabase.storage.from("images").getPublicUrl(storagePath);
+      final imageUrl = supabase.storage.from("images").getPublicUrl(storagePath);
       return imageUrl;
     } catch (e) {
       print('Erreur lors de l\'upload de l\'image : $e');
@@ -139,32 +131,24 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
       return Center(child: CircularProgressIndicator());
     }
 
-    return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddAvisDialog(context),
-        child: Icon(Icons.add_comment),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            material.Text('Critiques:',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            if (avisList.isEmpty)
-              material.Text('Aucun avis trouvé.')
-            else
-              ListView.builder(
-                shrinkWrap: true,
-                physics: NeverScrollableScrollPhysics(),
-                itemCount: avisList.length,
-                itemBuilder: (context, index) {
-                  return _buildAvisItem(avisList[index]);
-                },
-              ),
-            SizedBox(height: 20),
-          ],
+    return Column(
+      mainAxisSize: MainAxisSize.min, // Ajouté cette ligne
+      children: [
+        Flexible( // Modifié Expanded en Flexible
+          child: avisList.isEmpty
+              ? Center(child: material.Text('Aucun avis trouvé.'))
+              : ListView.builder(
+                  itemCount: avisList.length,
+                  itemBuilder: (context, index) {
+                    return _buildAvisItem(avisList[index]);
+                  },
+                ),
         ),
-      ),
+        ElevatedButton(
+          onPressed: () => _showAddAvisDialog(context),
+          child: Icon(Icons.add_comment),
+        ),
+      ],
     );
   }
 
@@ -194,19 +178,20 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
     return Container(
       margin: EdgeInsets.symmetric(vertical: 8),
       padding: EdgeInsets.all(12),
-      decoration: BoxDecoration(
-          color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(8)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           material.Text(DateTime.parse(avis['date_creation']).toString(),
               style: TextStyle(fontWeight: FontWeight.bold)),
           if (avis['img'] != null)
-            Image.network(avis['img'],
-                width: 200, height: 200, fit: BoxFit.cover),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: 200, maxWidth: 200),
+              child: Image.network(avis['img'], fit: BoxFit.cover),
+            ),
           material.Text(avis['commentaire'] ?? ''),
-          material.Text('Note: ${avis['note']}/5',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          material.Text('Note: ${avis['note']}/5', style: TextStyle(fontWeight: FontWeight.bold)),
           if (widget.userId == avis['id_utilisateur'])
             ElevatedButton(
                 onPressed: () async {
@@ -218,61 +203,57 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
     );
   }
 
-Widget _buildAvisForm() {
-  return StatefulBuilder( // Utilisation de StatefulBuilder pour le formulaire entier
-    builder: (BuildContext context, StateSetter formSetState) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          material.Text('Note:'),
-          StatefulBuilder(
-            builder: (BuildContext context, StateSetter setState) {
-              return DropdownButton<int>(
-                value: newNote,
-                items: List.generate(5, (index) => index + 1)
-                    .map((value) => DropdownMenuItem(
-                          value: value,
-                          child: material.Text(value.toString()),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  if (value != null) {
-                    setState(() {
-                      newNote = value;
-                    });
-                  }
-                },
-              );
-            },
-          ),
-          material.Text('Commentaire:'),
-          TextFormField(
-            onChanged: (value) => newCommentaire = value,
-            decoration: InputDecoration(border: OutlineInputBorder()),
-            maxLines: 3,
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final image = await ImagePicker().pickImage(
-                  source: ImageSource.gallery, maxWidth: 1980, maxHeight: 1980);
-              if (image != null) {
-                formSetState(() { // Utilisation de formSetState
-                  _pickedImage = image;
-                });
-              }
-            },
-            child: material.Text('Choisir une image'),
-          ),
-          if (_pickedImage != null) // Affichage du message
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text('Image sélectionnée: ${_pickedImage!.name}'),
+  Widget _buildAvisForm() {
+    return StatefulBuilder(
+      builder: (BuildContext context, StateSetter formSetState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            material.Text('Note:'),
+            StatefulBuilder(
+              builder: (BuildContext context, StateSetter setState) {
+                return DropdownButton<int>(
+                  value: newNote,
+                  items: List.generate(5, (index) => index + 1)
+                      .map((value) => DropdownMenuItem(value: value, child: material.Text(value.toString())))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        newNote = value;
+                      });
+                    }
+                  },
+                );
+              },
             ),
-          ElevatedButton(onPressed: _addAvis, child: material.Text('Envoyer')),
-        ],
-      );
-    },
-  );
-}
-
+            material.Text('Commentaire:'),
+            TextFormField(
+              onChanged: (value) => newCommentaire = value,
+              decoration: InputDecoration(border: OutlineInputBorder()),
+              maxLines: 3,
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final image = await ImagePicker().pickImage(source: ImageSource.gallery, maxWidth: 1980, maxHeight: 1980);
+                if (image != null) {
+                  formSetState(() {
+                    _pickedImage = image;
+                  });
+                }
+              },
+              child: material.Text('Choisir une image'),
+            ),
+            if (_pickedImage != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Text('Image sélectionnée: ${_pickedImage!.name}'),
+              ),
+            ElevatedButton(onPressed: _addAvis, child: material.Text('Envoyer')),
+          ],
+        );
+      },
+    );
+  }
 }

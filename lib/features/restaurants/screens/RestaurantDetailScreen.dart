@@ -154,42 +154,72 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 
   Widget _buildImageGallery(List<String?> images) {
-    // ... (votre code buildImageGallery reste le même)
-        if (images.length <= 3) {
-      return Row(
-        children: images
-            .where((image) => image != null)
-            .map((image) => Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: Image.network(image!,
-                      width: 100, height: 100, fit: BoxFit.cover),
-                ))
-            .toList(),
-      );
-    } else {
-      return Row(
-        children: images
-                .take(2).where((image) => image != null).map((image) => Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: Image.network(image!,
-                          width: 100, height: 100, fit: BoxFit.cover),
-                    ))
-            .toList() +
-            [
-              Padding( // Wrap the container in padding
+  if (images.length <= 3) {
+    return Row(
+      children: images
+          .where((image) => image != null)
+          .map((image) => Padding(
                 padding: const EdgeInsets.only(right: 8.0),
-                child: Container(
+                child: Image.network(
+                  image!,
                   width: 100,
                   height: 100,
-                  color: Colors.grey[300],
-                  child: Center(
-                    child: Text('+${images.length - 2}',
-                        style: TextStyle(fontSize: 20)),
-                  ),
+                  fit: BoxFit.cover,
+                  loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return Center(
+                      child: CircularProgressIndicator(
+                        value: loadingProgress.expectedTotalBytes != null
+                            ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                            : null,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
                 ),
-              )
-            ],
-      );
-    }
+              ))
+          .toList(),
+    );
+  } else {
+    return Row(
+      children: images
+              .take(2)
+              .where((image) => image != null)
+              .map((image) => Padding(
+                    padding: const EdgeInsets.only(right: 8.0),
+                    child: Image.network(
+                      image!,
+                      width: 100,
+                      height: 100,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.error),
+                    ),
+                  ))
+              .toList() +
+          [
+            Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: Container(
+                width: 100,
+                height: 100,
+                color: Colors.grey[300],
+                child: Center(
+                  child: Text('+${images.length - 2}', style: const TextStyle(fontSize: 20)),
+                ),
+              ),
+            )
+          ],
+    );
   }
+}
 }
