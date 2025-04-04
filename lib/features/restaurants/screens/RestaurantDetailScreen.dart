@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:sae_mobile/core/models/Restaurant.dart';
 import 'package:sae_mobile/features/Favoris/FavorisProvider.dart';
 import 'package:sae_mobile/features/comments/widgets/AvisRestaurantWidget.dart';
+import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sae_mobile/features/restaurants/providers/RestaurantProvider.dart';
 class RestaurantDetailScreen extends StatefulWidget {
   final int restaurantId;
 
@@ -17,28 +19,17 @@ class RestaurantDetailScreen extends StatefulWidget {
 
 class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   Future<Restaurant?>? _restaurantFuture;
-  final _supabaseClient = Supabase.instance.client;
+  Future<List<String?>>? _commentImagesFuture;
 
   @override
   void initState() {
     super.initState();
-    _restaurantFuture = _fetchRestaurantDetails();
-  }
-
-  Future<Restaurant?> _fetchRestaurantDetails() async {
-    try {
-      final result = await _supabaseClient
-          .from('restaurant')
-          .select()
-          .eq('id', widget.restaurantId);
-      if (result != null && result.isNotEmpty) {
-        return Restaurant.fromMap((result as List).first);
-      }
-      return null;
-    } catch (e) {
-      print("Erreur lors de la récupération du restaurant : $e");
-      return null;
-    }
+    final restaurantProvider =
+        Provider.of<RestaurantProvider>(context, listen: false);
+    _restaurantFuture =
+        restaurantProvider.fetchRestaurantDetails(widget.restaurantId);
+    _commentImagesFuture =
+        restaurantProvider.fetchRestaurantImages(widget.restaurantId);
   }
 
   @override
@@ -85,6 +76,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ... (le reste de votre code reste le même)
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -138,10 +130,66 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           Text(restaurant.description ?? 'N/A',
               style: const TextStyle(fontSize: 16)),
           const SizedBox(height: 20),
+          // Affichage des images
+          FutureBuilder<List<String?>>(
+            future: _commentImagesFuture,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const CircularProgressIndicator();
+              } else if (snapshot.hasError) {
+                return Text('Erreur : ${snapshot.error}');
+              } else if (snapshot.hasData && snapshot.data!.isNotEmpty) {
+                return _buildImageGallery(snapshot.data!);
+              } else {
+                return const SizedBox.shrink(); // Aucune image à afficher
+              }
+            },
+          ),
+          const SizedBox(height: 20),
           // Ajout du widget AvisRestaurantWidget
           AvisRestaurantWidget(restaurantId: restaurant.id!),
         ],
       ),
     );
+  }
+
+  Widget _buildImageGallery(List<String?> images) {
+    // ... (votre code buildImageGallery reste le même)
+        if (images.length <= 3) {
+      return Row(
+        children: images
+            .where((image) => image != null)
+            .map((image) => Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Image.network(image!,
+                      width: 100, height: 100, fit: BoxFit.cover),
+                ))
+            .toList(),
+      );
+    } else {
+      return Row(
+        children: images
+                .take(2).where((image) => image != null).map((image) => Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: Image.network(image!,
+                          width: 100, height: 100, fit: BoxFit.cover),
+                    ))
+            .toList() +
+            [
+              Padding( // Wrap the container in padding
+                padding: const EdgeInsets.only(right: 8.0),
+                child: Container(
+                  width: 100,
+                  height: 100,
+                  color: Colors.grey[300],
+                  child: Center(
+                    child: Text('+${images.length - 2}',
+                        style: TextStyle(fontSize: 20)),
+                  ),
+                ),
+              )
+            ],
+      );
+    }
   }
 }
