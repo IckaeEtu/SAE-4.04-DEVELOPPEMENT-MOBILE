@@ -47,50 +47,64 @@ class SupabaseHelper {
 
   // Récupérer les avis d'un restaurant
   Future<List<Map<String, dynamic>>> getAvisRestaurant(int restaurantId) async {
+    print('Récupération des avis pour le restaurant $restaurantId...');
+    final response = await supabase
+        .from(tableCritique)
+        .select()
+        .eq(columnIdRestaurant, restaurantId);
     try {
-      final response = await supabase
-          .from(tableCritique)
-          .select()
-          .eq(columnIdRestaurant, restaurantId);
-
-      return response as List<Map<String, dynamic>>;
+      if (response == null || response.isEmpty) {
+        throw Exception('Aucune donnée trouvée.');
+      }
     } catch (e) {
-      print('Erreur lors de la récupération des avis restaurant: $e');
-      return [];
+      print('Erreur Supabase: $e');
+      throw e;
     }
+    print('Avis du restaurant $restaurantId: ${response}');
+    return response as List<Map<String, dynamic>>;
   }
 
-  // Ajouter un avis
-  Future<int?> addAvis(
-      int restaurantId, int userId, String commentaire, int note, String? imageUrl) async {
-    try {
-      final response = await supabase.from(tableCritique).insert({
-        columnIdRestaurant: restaurantId,
-        columnIdUtilisateur: userId,
-        'commentaire': commentaire,
-        'note': note,
-        'image_url': imageUrl,
-      }).select(columnId).single();
+  Future<int> addAvis(int restaurantId, int userId, String commentaire,
+      int note, String? imageUrl) async {
+    print('Ajout d\'un avis pour le restaurant $restaurantId...');
+    final response = await supabase
+        .from(tableCritique)
+        .insert({
+          columnIdRestaurant: restaurantId,
+          columnIdUtilisateur: userId,
+          'commentaire': commentaire,
+          'note': note,
+          'img': imageUrl,
+        })
+        .select(columnId)
+        .single();
 
-      return response[columnId] as int?;
+    try {
+      if (response == null || response.isEmpty) {
+        throw Exception('Aucune donnée trouvée.');
+      }
     } catch (e) {
-      print('Erreur lors de l\'ajout de l\'avis: $e');
-      return null;
+      print('Erreur Supabase: $e');
+      throw e;
     }
+    return (response as Map<String, dynamic>)[columnId] as int;
   }
 
-  // Supprimer un avis
-  Future<bool> deleteAvis(int avisId) async {
+  Future<int> deleteAvis(int avisId) async {
+    print('Suppression de l\'avis $avisId...');
     try {
-      final response = await supabase.from(tableCritique).delete().eq(columnId, avisId);
-      return response.count != null && response.count! > 0;
-    } catch (e) {
-      print('Erreur lors de la suppression de l\'avis: $e');
-      return false;
+      final response =
+        await supabase.from(tableCritique).delete().eq(columnId, avisId);
+        print('Avis $avisId supprimé.');
+        return 0;
     }
+    catch (e) {
+      print('Erreur Supabase: $e');
+      return 0;
+    }
+  
   }
 
-  // Récupérer tous les restaurants
   Future<List<Map<String, dynamic>>> getAllRestaurant() async {
     try {
       final response = await supabase.from(tableRestaurant).select();
@@ -135,6 +149,7 @@ class SupabaseHelper {
 
   // Extraire et insérer des restaurants depuis un JSON
   Future<bool> extraireRestaurants(String json) async {
+    print('Extraction des restaurants...');
     try {
       final restaurants = jsonDecode(json) as List<dynamic>;
 
@@ -158,6 +173,7 @@ class SupabaseHelper {
           });
         }
       }
+      print('Extraction réussie.');
       return true;
     } catch (e) {
       print('Erreur lors de l\'extraction des restaurants : $e');
@@ -167,6 +183,7 @@ class SupabaseHelper {
 
   // Initialiser et remplir la table restaurants depuis un fichier JSON
   Future<void> initialiserEtRemplirTables(String chemin) async {
+    print('Initialisation des tables...');
     final prefs = await SharedPreferences.getInstance();
     final isInitialized = prefs.getBool('tables_initialized') ?? false;
 
@@ -196,6 +213,35 @@ class SupabaseHelper {
       } catch (e) {
         print('Erreur lors de l\'initialisation des tables: $e');
       }
+    } else {
+      print('Tables déjà initialisées.');
+    }
+  }
+
+  Future<List<String?>> getRestaurantCommentImages(int restaurantId) async {
+    print('Récupération des images des commentaires pour le restaurant $restaurantId...');
+    try {
+      final response = await supabase
+          .from(SupabaseHelper.tableCritique)
+          .select('img') // Sélectionne uniquement la colonne 'img'
+          .eq(SupabaseHelper.columnIdRestaurant, restaurantId)
+          .not('img', 'is', null); // Exclut les lignes où 'img' est null
+
+      if (response == null || response.isEmpty) {
+        print('Aucune image trouvée pour le restaurant $restaurantId.');
+        return [];
+      }
+
+      // Extrait les URLs des images de la réponse
+      List<String?> imageUrls = (response as List<dynamic>)
+          .map((item) => (item as Map<String, dynamic>)['img'] as String?)
+          .toList();
+
+      print('Images des commentaires du restaurant $restaurantId: $imageUrls');
+      return imageUrls;
+    } catch (e) {
+      print('Erreur Supabase lors de la récupération des images des commentaires: $e');
+      return []; // Retourne une liste vide en cas d'erreur
     }
   }
 }
