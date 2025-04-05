@@ -131,23 +131,39 @@ class _AvisRestaurantWidgetState extends State<AvisRestaurantWidget> {
       return Center(child: CircularProgressIndicator());
     }
 
-    return Column(
-      mainAxisSize: MainAxisSize.min, // Ajouté cette ligne
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Stack(
       children: [
-        Flexible( // Modifié Expanded en Flexible
-          child: avisList.isEmpty
-              ? Center(child: material.Text('Aucun avis trouvé.'))
-              : ListView.builder(
-                  itemCount: avisList.length,
-                  itemBuilder: (context, index) {
-                    return _buildAvisItem(avisList[index]);
-                  },
-                ),
+        SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(
+                child: avisList.isEmpty
+                    ? Center(child: material.Text('Aucun avis trouvé.'))
+                    : ListView.builder(
+                        itemCount: avisList.length,
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        itemBuilder: (context, index) {
+                          return _buildAvisItem(avisList[index]);
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
-        ElevatedButton(
-          onPressed: () => _showAddAvisDialog(context),
-          child: Icon(Icons.add_comment),
-        ),
+        if (widget.userId != null)
+          Positioned(
+            right: screenWidth * 0.05,
+            top: screenHeight * 0.05,
+            child: ElevatedButton(
+              onPressed: () => _showAddAvisDialog(context),
+              child: Icon(Icons.add_comment),
+            ),
+          ),
       ],
     );
   }
