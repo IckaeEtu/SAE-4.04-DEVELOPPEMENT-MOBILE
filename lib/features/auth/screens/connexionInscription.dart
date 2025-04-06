@@ -51,8 +51,10 @@ class _AuthPageState extends State<AuthPage> {
         // Stocker l'ID utilisateur en local
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setInt('user_id', response['id']);
+        await prefs.setString('role', response['role']);
 
         if (mounted) {
+          print(response);
           context.go('/home');
         }
       } else {
@@ -84,6 +86,7 @@ class _AuthPageState extends State<AuthPage> {
         // Stocker l'ID utilisateur
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setInt('user_id', response['id']);
+        await prefs.setString('role', response['role']);
 
         if (mounted) {
           context.go('/home');

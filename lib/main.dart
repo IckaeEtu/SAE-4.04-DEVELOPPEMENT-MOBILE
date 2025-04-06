@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'routes/router.dart';
-import 'package:provider/provider.dart';
-import 'package:sae_mobile/features/Favoris/FavorisProvider.dart';
-import 'package:sae_mobile/features/restaurants/providers/RestaurantProvider.dart';
+import 'package:sae_mobile/features/HomePage.dart';
+import 'package:sae_mobile/providers/data.dart';
+import 'package:sae_mobile/routes/router.dart';
+import 'package:provider/provider.dart'; // Import Provider
+import 'package:sae_mobile/features/Favoris/FavorisProvider.dart'; // Import FavoritesProvider
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

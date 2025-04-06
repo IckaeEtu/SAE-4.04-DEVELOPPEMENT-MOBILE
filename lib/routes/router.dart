@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../features/auth/screens/connexionInscription.dart';
 import 'package:sae_mobile/features/restaurants/screens/RestaurantDetailScreen.dart';
 import '../features/HomePage.dart';
+import 'package:sae_mobile/features/admin/screens/adminPage.dart';
 
 final GoRouter router = GoRouter(
   redirect: (BuildContext context, GoRouterState state) {
@@ -26,11 +27,15 @@ final GoRouter router = GoRouter(
   routes: <GoRoute>[
     GoRoute(
       path: '/',
-      builder: (BuildContext context, GoRouterState state) => HomePage(),
+      builder: (BuildContext context, GoRouterState state) => AuthPage(),
     ),
     GoRoute(
       path: '/logout',
       builder: (BuildContext context, GoRouterState state) => HomePage(),
+    ),
+    GoRoute(
+      path: '/admin',
+      builder: (BuildContext context, GoRouterState state) => AdminPage(),
     ),
     GoRoute(
       path: '/home',

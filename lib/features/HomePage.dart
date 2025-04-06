@@ -7,6 +7,7 @@ import 'package:sae_mobile/features/Favoris/FavorisProvider.dart';
 import 'package:sae_mobile/core/models/Restaurant.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
 
 final supabase = Supabase.instance.client;
 
@@ -20,11 +21,34 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> searchResults = [];
   List<Map<String, dynamic>> topRestaurants = [];
+  String? _userRole;
 
   @override
   void initState() {
     super.initState();
     _fetchRestaurants();
+  }
+
+  Future<void> _fetchUserRole() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    _userRole = prefs.getString('role');
+  }
+
+  void _navigateToAdmin() async {
+    await _fetchUserRole();
+    print(_userRole == 'admin');
+
+    if (_userRole == 'admin') {
+      context.go('/admin');
+    } else {
+      print('test');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Accès refusé. Vous n\'êtes pas administrateur.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Future<void> _fetchRestaurants() async {
@@ -66,6 +90,16 @@ class _HomePageState extends State<HomePage> {
       });
     }
   }
+
+  void _logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    await supabase.auth.signOut();
+    if (mounted) {
+      context.go('/logout');
+    }
+  }
+
 
   Widget _buildHomeContent() {
     return Padding(
@@ -263,12 +297,12 @@ class _HomePageState extends State<HomePage> {
             ListTile(
               leading: Icon(Icons.admin_panel_settings),
               title: Text("Admin"),
-              onTap: () => context.go('/admin'),
+              onTap: () => _navigateToAdmin(),
             ),
             ListTile(
               leading: Icon(Icons.logout),
               title: Text("Se déconnecter"),
-              onTap: () => context.go('/logout'),
+              onTap: () => _logout(),
             ),
           ],
         ),
