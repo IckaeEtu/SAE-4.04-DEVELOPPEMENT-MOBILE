@@ -58,14 +58,6 @@ class _HomePageState extends State<HomePage> {
                       'adresse': r['adresse']
                     })
                 .toList()
-            ? response
-                .map((r) => {
-                      'id': r['id'],
-                      'nom': r['nom'],
-                      'type': r['type'],
-                      'adresse': r['adresse']
-                    })
-                .toList()
             : [];
       });
     } catch (e) {
