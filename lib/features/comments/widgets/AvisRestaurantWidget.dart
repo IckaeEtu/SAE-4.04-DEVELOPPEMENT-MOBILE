@@ -1,10 +1,10 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/material.dart' as material;
+
+import 'package:image_picker/image_picker.dart';
 
 class AvisRestaurantWidget extends StatefulWidget {
   final int restaurantId;
