@@ -24,11 +24,11 @@ final GoRouter router = GoRouter(
   routes: <GoRoute>[
     GoRoute(
       path: '/',
-      builder: (BuildContext context, GoRouterState state) => AuthPage(),
+      builder: (BuildContext context, GoRouterState state) => HomePage(),
     ),
     GoRoute(
       path: '/logout',
-      builder: (BuildContext context, GoRouterState state) => AuthPage(),
+      builder: (BuildContext context, GoRouterState state) => HomePage(),
     ),
     GoRoute(
       path: '/home',
