@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart'; 
-import 'package:sae_mobile/features/Favoris/FavorisProvider.dart'; 
-import 'package:sae_mobile/core/models/Restaurant.dart'; 
+import 'package:provider/provider.dart';
+import 'package:sae_mobile/features/Favoris/FavorisProvider.dart';
+import 'package:sae_mobile/core/models/Restaurant.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart'; 
+import 'package:latlong2/latlong.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -27,8 +27,7 @@ class _HomePageState extends State<HomePage> {
     _fetchRestaurants();
   }
 
-  
-Future<void> _fetchRestaurants() async {
+  Future<void> _fetchRestaurants() async {
     final supabaseHelper = SupabaseHelper();
     final restaurants = await supabaseHelper.fetchTopRestaurants();
     setState(() {
@@ -69,59 +68,84 @@ Future<void> _fetchRestaurants() async {
   }
 
   Widget _buildHomeContent() {
-  return Padding(
-    padding: const EdgeInsets.all(16.0),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text("Où manger aujourd'hui ?",
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepOrangeAccent)),
-        SizedBox(height: 100),
-        Text("Les meilleurs restaurants :",
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-        topRestaurants.isEmpty
-            ? Text("Aucun restaurant disponible.", style: TextStyle(fontSize: 16, color: Colors.black54))
-            : Column(
-                children: topRestaurants
-                    .map((restaurant) => ListTile(
-                          title: Text(restaurant['nom'],
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                          subtitle: Text(restaurant['adresse']),
-                          onTap: () => context.go('/restaurant/${restaurant['id']}'),
-                        ))
-                    .toList(),
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text("Où manger aujourd'hui ?",
+              style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepOrangeAccent)),
+          SizedBox(height: 30),
+          Text("Les meilleurs restaurants :",
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+          topRestaurants.isEmpty
+              ? Text("Aucun restaurant disponible.",
+                  style: TextStyle(fontSize: 16, color: Colors.black54))
+              : Column(
+                  children: topRestaurants
+                      .map((restaurant) => ListTile(
+                            title: Text(restaurant['nom'],
+                                style: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold)),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(restaurant['adresse']),
+                                if (restaurant['latitude'] != null &&
+                                    restaurant['longitude'] != null)
+                                  Text(
+                                    'Lat: ${restaurant['latitude']}, Long: ${restaurant['longitude']}',
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.grey),
+                                  ),
+                              ],
+                            ),
+                            onTap: () =>
+                                context.go('/restaurant/${restaurant['id']}'),
+                          ))
+                      .toList(),
+                ),
+          SizedBox(height: 40),
+          Container(
+            height: 700,
+            child: FlutterMap(
+              options: MapOptions(
+                center: LatLng(48.8566, 2.3522),
+                zoom: 13.0,
               ),
-        SizedBox(height: 40), 
-        Container(
-          height: 600, 
-          child: FlutterMap(
-            options: MapOptions(
-              center: LatLng(47.9025, 1.9090), 
-              zoom: 13.0,
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: ['a', 'b', 'c'],
+                ),
+                MarkerLayer(
+                  markers: topRestaurants.map((restaurant) {
+                    return Marker(
+                      width: 80.0,
+                      height: 80.0,
+                      point: LatLng(
+                          restaurant['latitude'], restaurant['longitude']),
+                      builder: (ctx) => GestureDetector(
+                        onTap: () {
+                          context.go('/restaurant/${restaurant['id']}');
+                        },
+                        child: Icon(Icons.location_pin,
+                            color: Colors.red, size: 36),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-                subdomains: ['a', 'b', 'c'],
-              ),
-              MarkerLayer(
-                markers: topRestaurants.map((restaurant) {
-                  return Marker(
-                    width: 80.0,
-                    height: 80.0,
-                    point: LatLng(restaurant['latitude'], restaurant['longitude']),
-                    builder: (ctx) => Icon(Icons.location_pin, color: Colors.red),
-                  );
-                }).toList(),
-              ),
-            ],
           ),
-        ),
-      ],
-    ),
-  );
-}
-
+        ],
+      ),
+    );
+  }
 
   Widget _buildSearchContent() {
     return Padding(
