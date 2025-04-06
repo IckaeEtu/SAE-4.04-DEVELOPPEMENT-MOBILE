@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart'; // Import Provider
-import 'package:sae_mobile/features/Favoris/FavorisProvider.dart'; // Import FavoritesProvider
-import 'package:sae_mobile/core/models/Restaurant.dart'; // Import Restaurant model
+import 'package:provider/provider.dart';
+import 'package:sae_mobile/features/Favoris/FavorisProvider.dart';
+import 'package:sae_mobile/core/models/Restaurant.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 final supabase = Supabase.instance.client;
 
@@ -18,40 +20,19 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> searchResults = [];
   List<Map<String, dynamic>> topRestaurants = [];
-  GoogleMapController? mapController;
-  LatLng _currentPosition = LatLng(48.8566, 2.3522);
-  final Set<Marker> _markers = {};
 
   @override
   void initState() {
     super.initState();
-    fetchTopRestaurants();
+    _fetchRestaurants();
   }
 
-  Future<void> fetchTopRestaurants() async {
-    try {
-      final response = await supabase
-          .from('critique')
-          .select('id_restaurant, restaurant(nom, adresse, description), note')
-          .order('note', ascending: false)
-          .limit(3);
-
-      List<Map<String, dynamic>> fetchedRestaurants = response
-          .map<Map<String, dynamic>>((r) => {
-                'id': r['id_restaurant'],
-                'nom': r['restaurant']['nom'],
-                'adresse': r['restaurant']['adresse'],
-                'description': r['restaurant']
-                    ['description'], // Ajout de la description
-              })
-          .toList();
-
-      setState(() {
-        topRestaurants = fetchedRestaurants;
-      });
-    } catch (e) {
-      print("Erreur lors de la récupération des meilleurs restaurants: $e");
-    }
+  Future<void> _fetchRestaurants() async {
+    final supabaseHelper = SupabaseHelper();
+    final restaurants = await supabaseHelper.fetchTopRestaurants();
+    setState(() {
+      topRestaurants = restaurants;
+    });
   }
 
   void _onItemTapped(int index) {
@@ -69,6 +50,14 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         searchResults = response.isNotEmpty
+            ? response
+                .map((r) => {
+                      'id': r['id'],
+                      'nom': r['nom'],
+                      'type': r['type'],
+                      'adresse': r['adresse']
+                    })
+                .toList()
             ? response
                 .map((r) => {
                       'id': r['id'],
@@ -97,7 +86,7 @@ class _HomePageState extends State<HomePage> {
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.deepOrangeAccent)),
-          SizedBox(height: 10),
+          SizedBox(height: 30),
           Text("Les meilleurs restaurants :",
               style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           topRestaurants.isEmpty
@@ -112,18 +101,14 @@ class _HomePageState extends State<HomePage> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(restaurant['adresse'],
+                                Text(restaurant['adresse']),
+                                if (restaurant['latitude'] != null &&
+                                    restaurant['longitude'] != null)
+                                  Text(
+                                    'Lat: ${restaurant['latitude']}, Long: ${restaurant['longitude']}',
                                     style: TextStyle(
-                                        fontSize: 14, color: Colors.black54)),
-                                SizedBox(height: 4),
-                                Text(
-                                  restaurant['description'] ??
-                                      'Aucune description disponible', // Affichage de la description
-                                  style: TextStyle(
-                                      fontSize: 14, color: Colors.black54),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                                        fontSize: 12, color: Colors.grey),
+                                  ),
                               ],
                             ),
                             onTap: () =>
@@ -131,6 +116,40 @@ class _HomePageState extends State<HomePage> {
                           ))
                       .toList(),
                 ),
+          SizedBox(height: 40),
+          Container(
+            height: 700,
+            child: FlutterMap(
+              options: MapOptions(
+                center: LatLng(48.8566, 2.3522),
+                zoom: 13.0,
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate:
+                      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  subdomains: ['a', 'b', 'c'],
+                ),
+                MarkerLayer(
+                  markers: topRestaurants.map((restaurant) {
+                    return Marker(
+                      width: 80.0,
+                      height: 80.0,
+                      point: LatLng(
+                          restaurant['latitude'], restaurant['longitude']),
+                      builder: (ctx) => GestureDetector(
+                        onTap: () {
+                          context.go('/restaurant/${restaurant['id']}');
+                        },
+                        child: Icon(Icons.location_pin,
+                            color: Colors.red, size: 36),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -283,3 +302,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+

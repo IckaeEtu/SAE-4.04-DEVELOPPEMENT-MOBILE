@@ -147,6 +147,38 @@ class SupabaseHelper {
     }
   }
 
+  // Récupérer les meilleurs restaurants
+Future<List<Map<String, dynamic>>> fetchTopRestaurants() async {
+  try {
+    final response = await supabase
+        .from('critique')
+        .select('id_restaurant, restaurant(nom, adresse, latitude, longitude), note')
+        .order('note', ascending: false) 
+        .limit(3); 
+    List<Map<String, dynamic>> fetchedRestaurants = [];
+    if (response.isNotEmpty) {
+      fetchedRestaurants = response.map<Map<String, dynamic>>((r) {
+        final resto = r['restaurant'];
+        final latitude = resto['latitude'];
+        final longitude = resto['longitude'];
+        return {
+          'id': r['id_restaurant'],
+          'nom': resto['nom'],
+          'adresse': resto['adresse'],
+          'latitude': latitude ?? 47.9025,    
+          'longitude': longitude ?? 1.9090,   
+        };
+      }).toList();
+    }
+    return fetchedRestaurants;
+  } catch (e) {
+    print("Erreur lors de la récupération des meilleurs restaurants: $e");
+    return [];
+  }
+}
+
+
+
   // Extraire et insérer des restaurants depuis un JSON
   Future<bool> extraireRestaurants(String json) async {
     print('Extraction des restaurants...');
