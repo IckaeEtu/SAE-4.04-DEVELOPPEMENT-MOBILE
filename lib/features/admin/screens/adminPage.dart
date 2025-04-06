@@ -10,62 +10,25 @@ class AdminPage extends StatefulWidget {
 }
 
 class _AdminPageState extends State<AdminPage> {
-  String? _userRole;
   bool _loading = true;
   List<Map<String, dynamic>> _users = [];
   List<Map<String, dynamic>> _filteredUsers = [];
-  TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _checkAdminAccess();
-  }
-
-  Future<void> _checkAdminAccess() async {
-    final user = supabase.auth.currentUser;
-    if (user == null) {
-      _redirectHome();
-      return;
-    }
-
-    final response = await supabase
-        .from('utilisateur')
-        .select('role')
-        .eq('email', user.email!)
-        .maybeSingle();
-
-    if (response?['role'] != 'admin') {
-      _redirectHome();
-      return;
-    }
-
-    setState(() {
-      _userRole = response?['role'];
-      _loading = false;
-    });
-
     _fetchUsers();
   }
 
-  void _redirectHome() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.go('/home');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Accès refusé. Vous n\'êtes pas administrateur.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    });
-  }
-
   Future<void> _fetchUsers() async {
-    final response = await supabase.from('utilisateur').select('id, email, role');
+    final response =
+        await supabase.from('utilisateur').select('id, email, role');
 
     setState(() {
       _users = List<Map<String, dynamic>>.from(response);
       _filteredUsers = _users;
+      _loading = false;
     });
   }
 
@@ -78,27 +41,42 @@ class _AdminPageState extends State<AdminPage> {
     });
   }
 
-  void _editUserRole(String userId, String newRole) async {
-    await supabase.from('utilisateur').update({'role': newRole}).eq('id', userId);
+  Future<void> _editUserRole(String userId, String newRole) async {
+    await supabase
+        .from('utilisateur')
+        .update({'role': newRole}).eq('id', userId);
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Rôle mis à jour !'), backgroundColor: Colors.green),
+      SnackBar(
+        content: Text('Rôle mis à jour !'),
+        backgroundColor: Colors.green,
+      ),
     );
-    _fetchUsers();
+
+    await _fetchUsers();
   }
 
   void _showEditDialog(Map<String, dynamic> user) {
     String newRole = user['role'];
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Text("Modifier le rôle"),
-        content: DropdownButton<String>(
-          value: newRole,
-          items: ['admin', 'utilisateur']
-              .map((role) => DropdownMenuItem(value: role, child: Text(role)))
-              .toList(),
-          onChanged: (value) {
-            if (value != null) setState(() => newRole = value);
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return DropdownButton<String>(
+              value: newRole,
+              items: ['admin', 'utilisateur']
+                  .map((role) =>
+                      DropdownMenuItem(value: role, child: Text(role)))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => newRole = value);
+                }
+              },
+            );
           },
         ),
         actions: [
@@ -133,7 +111,7 @@ class _AdminPageState extends State<AdminPage> {
             onPressed: _fetchUsers,
           ),
           IconButton(
-            icon: Icon(Icons.home), // Ajout du bouton vers la page d'accueil
+            icon: Icon(Icons.home),
             onPressed: () => context.go('/home'),
           ),
         ],
@@ -147,7 +125,8 @@ class _AdminPageState extends State<AdminPage> {
               decoration: InputDecoration(
                 labelText: 'Rechercher un utilisateur',
                 suffixIcon: Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
               onChanged: _searchUser,
             ),
@@ -162,7 +141,7 @@ class _AdminPageState extends State<AdminPage> {
                         return Card(
                           child: ListTile(
                             title: Text(user['email']),
-                            subtitle: Text("Rôle: ${user['role']}"),
+                            subtitle: Text("Rôle : ${user['role']}"),
                             trailing: IconButton(
                               icon: Icon(Icons.edit, color: Colors.blue),
                               onPressed: () => _showEditDialog(user),

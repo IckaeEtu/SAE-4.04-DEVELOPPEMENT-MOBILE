@@ -290,11 +290,6 @@ class _HomePageState extends State<HomePage> {
               onTap: () => context.go('/best_rated_restaurant'),
             ),
             ListTile(
-              leading: Icon(Icons.feedback),
-              title: Text("Publier un avis"),
-              onTap: () {},
-            ),
-            ListTile(
               leading: Icon(Icons.admin_panel_settings),
               title: Text("Admin"),
               onTap: () => _navigateToAdmin(),
