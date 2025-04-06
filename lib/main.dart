@@ -13,7 +13,7 @@ void main() async {
   );
 
   runApp(
-    MultiProvider( // Utilisez MultiProvider ici
+    MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => FavorisProvider()),
         ChangeNotifierProvider(create: (context) => RestaurantProvider()),

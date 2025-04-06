@@ -193,7 +193,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             const SizedBox(height: 20),
             AvisRestaurantWidget(
               restaurantId: restaurant.id!,
-              userId: userId,
+              userId: 1,
             ),
           ],
         ),
