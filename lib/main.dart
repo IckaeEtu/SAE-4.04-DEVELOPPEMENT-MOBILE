@@ -16,8 +16,7 @@ void main() async {
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => FavorisProvider()),
-        ChangeNotifierProvider(create: (context) => RestaurantProvider()),
+        ChangeNotifierProvider(create: (context) => FavorisProvider())
       ],
       child: const MyApp(),
     ),
