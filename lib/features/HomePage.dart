@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:sae_mobile/providers/data.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:provider/provider.dart'; // Import Provider
-import 'package:sae_mobile/features/Favoris/FavorisProvider.dart'; // Import FavoritesProvider
-import 'package:sae_mobile/core/models/Restaurant.dart'; // Import Restaurant model
+import 'package:provider/provider.dart'; 
+import 'package:sae_mobile/features/Favoris/FavorisProvider.dart'; 
+import 'package:sae_mobile/core/models/Restaurant.dart'; 
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart'; 
 
 final supabase = Supabase.instance.client;
 
@@ -18,36 +20,20 @@ class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
   List<Map<String, dynamic>> searchResults = [];
   List<Map<String, dynamic>> topRestaurants = [];
-  GoogleMapController? mapController;
-  LatLng _currentPosition = LatLng(48.8566, 2.3522);
-  final Set<Marker> _markers = {};
 
   @override
   void initState() {
     super.initState();
-    fetchTopRestaurants();
+    _fetchRestaurants();
   }
 
-  Future<void> fetchTopRestaurants() async {
-    try {
-      final response = await supabase
-          .from('critique')
-          .select('id_restaurant, restaurant(nom, adresse), note')
-          .order('note', ascending: false)
-          .limit(2);
-
-      List<Map<String, dynamic>> fetchedRestaurants = response.map<Map<String, dynamic>>((r) => {
-            'id': r['id_restaurant'],
-            'nom': r['restaurant']['nom'],
-            'adresse': r['restaurant']['adresse'],
-          }).toList();
-
-      setState(() {
-        topRestaurants = fetchedRestaurants;
-      });
-    } catch (e) {
-      print("Erreur lors de la récupération des meilleurs restaurants: $e");
-    }
+  
+Future<void> _fetchRestaurants() async {
+    final supabaseHelper = SupabaseHelper();
+    final restaurants = await supabaseHelper.fetchTopRestaurants();
+    setState(() {
+      topRestaurants = restaurants;
+    });
   }
 
   void _onItemTapped(int index) {
@@ -65,12 +51,14 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         searchResults = response.isNotEmpty
-            ? response.map((r) => {
-                  'id': r['id'],
-                  'nom': r['nom'],
-                  'type': r['type'],
-                  'adresse': r['adresse']
-                }).toList()
+            ? response
+                .map((r) => {
+                      'id': r['id'],
+                      'nom': r['nom'],
+                      'type': r['type'],
+                      'adresse': r['adresse']
+                    })
+                .toList()
             : [];
       });
     } catch (e) {
@@ -81,32 +69,59 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildHomeContent() {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text("Où manger aujourd'hui ?",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepOrangeAccent)),
-          SizedBox(height: 10),
-          Text("Les meilleurs restaurants :",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-          topRestaurants.isEmpty
-              ? Text("Aucun restaurant disponible.", style: TextStyle(fontSize: 16, color: Colors.black54))
-              : Column(
-                  children: topRestaurants
-                      .map((restaurant) => ListTile(
-                            title: Text(restaurant['nom'],
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            subtitle: Text(restaurant['adresse']),
-                            onTap: () => context.go('/restaurant/${restaurant['id']}'),
-                          ))
-                      .toList(),
-                ),
-        ],
-      ),
-    );
-  }
+  return Padding(
+    padding: const EdgeInsets.all(16.0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("Où manger aujourd'hui ?",
+            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.deepOrangeAccent)),
+        SizedBox(height: 100),
+        Text("Les meilleurs restaurants :",
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        topRestaurants.isEmpty
+            ? Text("Aucun restaurant disponible.", style: TextStyle(fontSize: 16, color: Colors.black54))
+            : Column(
+                children: topRestaurants
+                    .map((restaurant) => ListTile(
+                          title: Text(restaurant['nom'],
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          subtitle: Text(restaurant['adresse']),
+                          onTap: () => context.go('/restaurant/${restaurant['id']}'),
+                        ))
+                    .toList(),
+              ),
+        SizedBox(height: 40), 
+        Container(
+          height: 600, 
+          child: FlutterMap(
+            options: MapOptions(
+              center: LatLng(47.9025, 1.9090), 
+              zoom: 13.0,
+            ),
+            children: [
+              TileLayer(
+                urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+                subdomains: ['a', 'b', 'c'],
+              ),
+              MarkerLayer(
+                markers: topRestaurants.map((restaurant) {
+                  return Marker(
+                    width: 80.0,
+                    height: 80.0,
+                    point: LatLng(restaurant['latitude'], restaurant['longitude']),
+                    builder: (ctx) => Icon(Icons.location_pin, color: Colors.red),
+                  );
+                }).toList(),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
 
   Widget _buildSearchContent() {
     return Padding(
@@ -118,7 +133,8 @@ class _HomePageState extends State<HomePage> {
             controller: _searchController,
             decoration: InputDecoration(
               hintText: 'Rechercher un restaurant...',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              border:
+                  OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               filled: true,
               fillColor: Colors.grey[200],
             ),
@@ -127,16 +143,21 @@ class _HomePageState extends State<HomePage> {
           SizedBox(height: 20),
           Expanded(
             child: searchResults.isEmpty
-                ? Center(child: Text('Aucun restaurant trouvé.', style: TextStyle(fontSize: 16, color: Colors.black87)))
+                ? Center(
+                    child: Text('Aucun restaurant trouvé.',
+                        style: TextStyle(fontSize: 16, color: Colors.black87)))
                 : ListView.builder(
                     itemCount: searchResults.length,
                     itemBuilder: (context, index) {
                       final restaurant = searchResults[index];
                       return ListTile(
-                        title: Text(restaurant['nom'], style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        title: Text(restaurant['nom'],
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
                         subtitle: Text(restaurant['adresse']),
                         trailing: Icon(Icons.arrow_forward_ios),
-                        onTap: () => context.go('/restaurant/${restaurant['id']}'),
+                        onTap: () =>
+                            context.go('/restaurant/${restaurant['id']}'),
                       );
                     },
                   ),
@@ -155,18 +176,24 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("Mes Restaurants Favoris", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          Text("Mes Restaurants Favoris",
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
           SizedBox(height: 20),
           Expanded(
             child: favoriteRestaurants.isEmpty
-                ? Center(child: Text("Vous n'avez pas encore de restaurants favoris.", style: TextStyle(fontSize: 16, color: Colors.black87)))
+                ? Center(
+                    child: Text(
+                        "Vous n'avez pas encore de restaurants favoris.",
+                        style: TextStyle(fontSize: 16, color: Colors.black87)))
                 : ListView.builder(
                     itemCount: favoriteRestaurants.length,
                     itemBuilder: (context, index) {
                       final restaurant = favoriteRestaurants[index];
                       return Card(
                         child: ListTile(
-                          title: Text(restaurant.nom, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                          title: Text(restaurant.nom,
+                              style: TextStyle(
+                                  fontSize: 16, fontWeight: FontWeight.bold)),
                           subtitle: Text(restaurant.adresse),
                           trailing: IconButton(
                             icon: Icon(Icons.delete, color: Colors.red),
@@ -174,7 +201,8 @@ class _HomePageState extends State<HomePage> {
                               favorisProvider.removeFavorite(restaurant.id!);
                             },
                           ),
-                          onTap: () => context.go('/restaurant/${restaurant.id}'),
+                          onTap: () =>
+                              context.go('/restaurant/${restaurant.id}'),
                         ),
                       );
                     },
@@ -195,7 +223,8 @@ class _HomePageState extends State<HomePage> {
           children: [
             DrawerHeader(
               decoration: BoxDecoration(color: Colors.green),
-              child: Text("Menu", style: TextStyle(color: Colors.white, fontSize: 24)),
+              child: Text("Menu",
+                  style: TextStyle(color: Colors.white, fontSize: 24)),
             ),
             ListTile(
               leading: Icon(Icons.star),
@@ -229,7 +258,9 @@ class _HomePageState extends State<HomePage> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Accueil'),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Recherche'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favoris'), // Change Profil en Favoris
+          BottomNavigationBarItem(
+              icon: Icon(Icons.favorite),
+              label: 'Favoris'), // Change Profil en Favoris
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.orangeAccent,

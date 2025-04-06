@@ -40,11 +40,10 @@ dependencies:
   supabase_flutter: ^2.8.4
   shared_preferences: ^2.5.3
   geolocator: ^11.0.0
-  google_maps_flutter: ^2.2.3
-  google_maps_flutter_android: ^2.2.3
-  google_maps_flutter_web: ^0.5.12
   provider: ^6.1.4
-
+  flutter_map: ^4.0.0
+  latlong2: ^0.8.0
+  http: ^0.13.6
 dev_dependencies:
   flutter_test:
     sdk: flutter

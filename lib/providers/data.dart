@@ -133,6 +133,51 @@ class SupabaseHelper {
     }
   }
 
+// SupabaseHelper.dart
+
+Future<List<Map<String, dynamic>>> fetchTopRestaurants() async {
+  try {
+    // Requête Supabase pour récupérer les meilleurs restaurants par note
+    final response = await supabase
+        .from('critique')
+        .select('id_restaurant, restaurant(nom, adresse, latitude, longitude), note')
+        .order('note', ascending: false) // Tri par note décroissante
+        .limit(2); // Limiter à 2 restaurants les mieux notés
+
+    List<Map<String, dynamic>> fetchedRestaurants = [];
+    if (response.isNotEmpty) {
+      fetchedRestaurants = response.map<Map<String, dynamic>>((r) {
+        final latitude = r['restaurant']['latitude'];
+        final longitude = r['restaurant']['longitude'];
+
+        // Vérification si latitude et longitude ne sont pas nulles
+        if (latitude != null && longitude != null) {
+          return {
+            'id': r['id_restaurant'],
+            'nom': r['restaurant']['nom'],
+            'adresse': r['restaurant']['adresse'],
+            'latitude': latitude,
+            'longitude': longitude,
+          };
+        } else {
+          return {
+            'id': r['id_restaurant'],
+            'nom': r['restaurant']['nom'],
+            'adresse': r['restaurant']['adresse'],
+            'latitude': 47.9025,  
+            'longitude': 1.9090,  
+          };
+        }
+      }).toList();
+    }
+    return fetchedRestaurants;
+  } catch (e) {
+    print("Erreur lors de la récupération des meilleurs restaurants: $e");
+    return [];
+  }
+}
+
+
   // Extraire et insérer des restaurants depuis un JSON
   Future<bool> extraireRestaurants(String json) async {
     try {
